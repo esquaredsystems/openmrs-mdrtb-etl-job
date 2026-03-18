@@ -206,7 +206,7 @@ def create_encounter_provider_table(engine, drop_create=False):
     with engine.connect() as conn:
         if drop_create:
             conn.execute(text("DROP TABLE IF EXISTS _encounter_provider"))
-        create_query = "CREATE TABLE _encounter_provider (encounter_provider_id int(10) NOT NULL, encounter_id int(10) NOT NULL, provider_id int(10) NOT NULL, encounter_role_id int(10) NOT NULL, creator int(10) NOT NULL, date_created datetime NOT NULL, changed_by int(10), date_changed datetime, voided bit(1) NOT NULL, date_voided datetime, voided_by int(10), void_reason varchar(255), uuid char(38) NOT NULL, PRIMARY KEY (encounter_provider_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        create_query = "CREATE TABLE _encounter_provider (encounter_provider_id int(10) AUTO_INCREMENT NOT NULL, encounter_id int(10) NOT NULL, provider_id int(10) NOT NULL, encounter_role_id int(10) NOT NULL, creator int(10) NOT NULL, date_created datetime NOT NULL, changed_by int(10), date_changed datetime, voided bit(1) NOT NULL, date_voided datetime, voided_by int(10), void_reason varchar(255), uuid char(38) NOT NULL, PRIMARY KEY (encounter_provider_id), UNIQUE KEY _encounter_provider_unique (encounter_id,provider_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         conn.execute(text(create_query))
         conn.commit()
 
@@ -215,7 +215,7 @@ def create_encounter_table(engine, drop_create=False):
     with engine.connect() as conn:
         if drop_create:
             conn.execute(text("DROP TABLE IF EXISTS _encounter"))
-        create_query = "CREATE TABLE _encounter (encounter_id int(10) NOT NULL, encounter_type int(10) NOT NULL, patient_id int(10) NOT NULL, location_id int(10), form_id int(10), encounter_datetime datetime NOT NULL, creator int(10) NOT NULL, date_created datetime NOT NULL, voided bit(1) NOT NULL, voided_by int(10), date_voided datetime, void_reason varchar(255), changed_by int(10), date_changed datetime, visit_id int(10), uuid char(38), PRIMARY KEY (encounter_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        create_query = "CREATE TABLE _encounter (encounter_id int(10) NOT NULL, encounter_type int(10) NOT NULL, patient_id int(10) NOT NULL, provider_id int(10) NOT NULL, location_id int(10), form_id int(10), encounter_datetime datetime NOT NULL, creator int(10) NOT NULL, date_created datetime NOT NULL, voided bit(1) NOT NULL, voided_by int(10), date_voided datetime, void_reason varchar(255), changed_by int(10), date_changed datetime, visit_id int(10), uuid char(38), PRIMARY KEY (encounter_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         conn.execute(text(create_query))
         conn.commit()
 
@@ -497,6 +497,14 @@ def create_program_workflow_table(engine, drop_create=False):
         conn.execute(text(create_query))
         conn.commit()
 
+
+def create_provider_table(engine, drop_create=False):
+    with engine.connect() as conn:
+        if drop_create:
+            conn.execute(text("DROP TABLE IF EXISTS _provider"))
+        create_query = "CREATE TABLE _provider (provider_id int(11) NOT NULL, person_id int(11), name varchar(255), identifier varchar(255), creator int(11) NOT NULL, date_created datetime NOT NULL, changed_by int(11), date_changed datetime, retired tinyint(1) NOT NULL, retired_by int(11), date_retired datetime, retire_reason varchar(255), uuid char(38), role_id int(11), speciality_id int(11), PRIMARY KEY (`provider_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        conn.execute(text(create_query))
+        conn.commit()
 
 def create_relationship_type_table(engine, drop_create=False):
     with engine.connect() as conn:

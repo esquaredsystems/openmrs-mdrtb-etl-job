@@ -279,6 +279,7 @@ CREATE TABLE _encounter (
 encounter_id int(10) NOT NULL,
 encounter_type int(10) NOT NULL,
 patient_id int(10) NOT NULL,
+provider_id int(10),
 location_id int(10),
 form_id int(10),
 encounter_datetime datetime NOT NULL,
@@ -296,7 +297,7 @@ PRIMARY KEY (encounter_id)
 );
 
 CREATE TABLE _encounter_provider (
-encounter_provider_id int(10) NOT NULL,
+encounter_provider_id int(10) AUTO_INCREMENT NOT NULL,
 encounter_id int(10) NOT NULL,
 provider_id int(10) NOT NULL,
 encounter_role_id int(10) NOT NULL,
@@ -309,7 +310,8 @@ date_voided datetime,
 voided_by int(10),
 void_reason varchar(255),
 uuid char(38) NOT NULL,
-PRIMARY KEY (encounter_provider_id)
+PRIMARY KEY (encounter_provider_id),
+UNIQUE KEY _encounter_provider_unique (encounter_id,provider_id)
 );
 
 CREATE TABLE _encounter_type (
@@ -889,6 +891,25 @@ changed_by int(10),
 date_changed datetime,
 uuid char(38),
 PRIMARY KEY (program_workflow_state_id)
+);
+
+CREATE TABLE _provider (
+provider_id int(11) NOT NULL,
+person_id int(11),
+name varchar(255),
+identifier varchar(255),
+creator int(11) NOT NULL,
+date_created datetime NOT NULL,
+changed_by int(11),
+date_changed datetime,
+retired tinyint(1) NOT NULL,
+retired_by int(11),
+date_retired datetime,
+retire_reason varchar(255),
+uuid char(38),
+role_id int(11),
+speciality_id int(11),
+PRIMARY KEY (`provider_id`)
 );
 
 CREATE TABLE _relationship_type (

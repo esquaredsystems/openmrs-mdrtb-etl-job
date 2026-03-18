@@ -1,23 +1,26 @@
 from etl.openmrs16_extractor import *
+from etl.openmrs25_loader import *
+from etl.openmrs_transformer import transform_provider, transform_encounter_provider
 from utils.logger import info
-from sqlalchemy import text
+import time
 
 
 def extract_address_hierarchy_group(drop_create):
+    start_time = time.time()
     extract_address_hierarchy_level(drop_create=drop_create)
     info("Extracting data from source database and inserting into target database...")
     extract_address_hierarchy_entry(drop_create=drop_create)
-    info("Address hierarchy level and entry tables created successfully")
-
+    info(f"Address hierarchy level and entry tables created successfully (Time: {time.time() - start_time:.2f} seconds)")
 
 def extract_cohort_group(drop_create):
+    start_time = time.time()
     extract_cohort(drop_create=drop_create)
     info("Cohort table created successfully")
     extract_cohort_member(drop_create=drop_create)
-    info("Cohort member table created successfully")
-
+    info(f"Cohort member table created successfully (Time: {time.time() - start_time:.2f} seconds)")
 
 def extract_concept_group(drop_create):
+    start_time = time.time()
     extract_concept(drop_create=drop_create)
     info("Concept table created successfully")
     extract_concept_answer(drop_create=drop_create)
@@ -43,19 +46,19 @@ def extract_concept_group(drop_create):
     extract_concept_set(drop_create=drop_create)
     info("Concept set table created successfully")
     extract_concept_word(drop_create=drop_create)
-    info("Concept word table created successfully")
-
+    info(f"Concept word table created successfully (Time: {time.time() - start_time:.2f} seconds)")
 
 def extract_drug_group(drop_create):
+    start_time = time.time()
     extract_drug(drop_create=drop_create)
     info("Drug table created successfully")
     extract_drug_ingredient(drop_create=drop_create)
     info("Drug ingredient table created successfully")
     extract_drug_order(drop_create=drop_create)
-    info("Drug order table created successfully")
-
+    info(f"Drug order table created successfully (Time: {time.time() - start_time:.2f} seconds)")
 
 def extract_form_group(drop_create):
+    start_time = time.time()
     extract_form(drop_create=drop_create)
     info("Form table created successfully")
     extract_form_field(drop_create=drop_create)
@@ -67,31 +70,31 @@ def extract_form_group(drop_create):
     extract_field_type(drop_create=drop_create)
     info("Field type table created successfully")
     extract_htmlformentry_html_form(drop_create=drop_create)
-    info("HTML Form Entry table created successfully")
-
+    info(f"HTML Form Entry table created successfully (Time: {time.time() - start_time:.2f} seconds)")
 
 def extract_hl7_group(drop_create):
+    start_time = time.time()
     extract_hl7_in_error(drop_create=drop_create)
     info("HL7 in error table created successfully")
     extract_hl7_in_queue(drop_create=drop_create)
     info("HL7 in queue table created successfully")
     extract_hl7_source(drop_create=drop_create)
-    info("HL7 source table created successfully")
-
+    info(f"HL7 source table created successfully (Time: {time.time() - start_time:.2f} seconds)")
 
 def extract_location_group(drop_create):
+    start_time = time.time()
     extract_location(drop_create=drop_create)
-    info("Location table created successfully")
-
+    info(f"Location table created successfully (Time: {time.time() - start_time:.2f} seconds)")
 
 def extract_orders_group(drop_create):
+    start_time = time.time()
     extract_orders(drop_create=drop_create)
     info("Orders table created successfully")
     extract_order_type(drop_create=drop_create)
-    info("Order type table created successfully")
-
+    info(f"Order type table created successfully (Time: {time.time() - start_time:.2f} seconds)")
 
 def extract_program_group(drop_create):
+    start_time = time.time()
     extract_program(drop_create=drop_create)
     info("Program table created successfully")
     extract_program_workflow(drop_create=drop_create)
@@ -99,10 +102,10 @@ def extract_program_group(drop_create):
     extract_program_workflow_state(drop_create=drop_create)
     info("Program workflow state table created successfully")
     extract_relationship_type(drop_create=drop_create)
-    info("Relationship type table created successfully")
-
+    info(f"Relationship type table created successfully (Time: {time.time() - start_time:.2f} seconds)")
 
 def extract_user_group(drop_create):
+    start_time = time.time()
     extract_privilege(drop_create=drop_create)
     info("Privilege table created successfully")
     extract_role(drop_create=drop_create)
@@ -114,19 +117,19 @@ def extract_user_group(drop_create):
     extract_users(drop_create=drop_create)
     info("Users table created successfully")
     extract_user_property(drop_create=drop_create)
-    info("User property table created successfully")
-
+    info(f"User property table created successfully (Time: {time.time() - start_time:.2f} seconds)")
 
 def extract_report_group(drop_create):
+    start_time = time.time()
     extract_report_object(drop_create=drop_create)
     info("Report object table created successfully")
     extract_report_schema_xml(drop_create=drop_create)
     info("Report schema XML table created successfully")
     extract_serialized_object(drop_create=drop_create)
-    info("Serialized object table created successfully")
-
+    info(f"Serialized object table created successfully (Time: {time.time() - start_time:.2f} seconds)")
 
 def extract_misc_group(drop_create):
+    start_time = time.time()
     extract_global_property(drop_create=drop_create)
     info("Global property table created successfully")
     extract_note(drop_create=drop_create)
@@ -134,10 +137,10 @@ def extract_misc_group(drop_create):
     extract_notification_alert(drop_create=drop_create)
     info("Notification alert table created successfully")
     extract_notification_alert_recipient(drop_create=drop_create)
-    info("Notification alert recipient table created successfully")
-
+    info(f"Notification alert recipient table created successfully (Time: {time.time() - start_time:.2f} seconds)")
 
 def extract_patient_group(drop_create):
+    start_time = time.time()
     extract_patient(drop_create=drop_create)
     info("Patient table created successfully")
     extract_patient_identifier(drop_create=drop_create)
@@ -155,35 +158,24 @@ def extract_patient_group(drop_create):
     extract_person_attribute_type(drop_create=drop_create)
     info("Person attribute type table created successfully")
     extract_person_name(drop_create=drop_create)
-    info("Person name table created successfully")
-
+    info(f"Person name table created successfully (Time: {time.time() - start_time:.2f} seconds)")
 
 def extract_encounter_group(drop_create):
+    start_time = time.time()
     extract_encounter_type(drop_create=drop_create)
     info("Encounter type table created successfully")
     extract_encounter(drop_create=drop_create)
     info("Encounter table created successfully")
     extract_encounter_provider(drop_create=drop_create)
-    info("Encounter provider table created successfully")
-
+    info(f"Encounter provider table created successfully (Time: {time.time() - start_time:.2f} seconds)")
 
 def extract_obs_group(drop_create):
+    start_time = time.time()
     extract_obs(drop_create=drop_create, resume=True)
-    info("Obs table created successfully")
+    info(f"Obs table created successfully (Time: {time.time() - start_time:.2f} seconds)")
 
-
-def run_job(hard_reset=False):
-
-    info("Connecting to source database...")
-    source = get_source_engine()
-
-    info("Connecting to target database...")
-    target = get_target_engine()
-
-    with source.connect() as conn:
-        result = conn.execute(text("SELECT COUNT(*) FROM privilege"))
-        info(f"Privilege count: {list(result)[0][0]}")
-
+def run_extract_job(hard_reset=False):
+    start_time = time.time()
     extract_address_hierarchy_group(hard_reset)
     extract_cohort_group(hard_reset)
     extract_concept_group(hard_reset)
@@ -199,3 +191,29 @@ def run_job(hard_reset=False):
     extract_patient_group(hard_reset)
     extract_encounter_group(hard_reset)
     extract_obs_group(hard_reset)
+    info(f"Extraction job completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
+
+def run_transform_job():
+    start_time = time.time()
+    transform_provider()
+    transform_encounter_provider()
+    info(f"Transformation job completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
+
+def run_load_job():
+    start_time = time.time()
+    load_field()
+    load_field_type()
+    load_form_field()
+    load_form()
+    load_htmlformentry_html_form()
+    load_program()
+    load_program_workflow()
+    load_program_workflow_state()
+    load_hl7_source()
+    load_hl7_error()
+    load_hl7_queue()
+    load_relationship_type()
+    load_cohort()
+    load_scheduler_task_config()
+    load_global_property()
+    info(f"Load job completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")

@@ -32,7 +32,6 @@ def extract_address_hierarchy_entry(drop_create=False):
     else:
         warning("No data found in source address_hierarchy_entry table.")
 
-
 def extract_address_hierarchy_level(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
@@ -60,7 +59,6 @@ def extract_address_hierarchy_level(drop_create=False):
         info("Import completed successfully.")
     else:
         warning("No data found in source address_hierarchy_level table.")
-
 
 def extract_cohort(drop_create=False):
     source_engine = get_source_engine()
@@ -91,7 +89,6 @@ def extract_cohort(drop_create=False):
     else:
         warning("No data found in source cohort table.")
 
-
 def extract_cohort_member(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
@@ -112,7 +109,6 @@ def extract_cohort_member(drop_create=False):
         info("Import completed successfully.")
     else:
         warning("No data found in source cohort_member table.")
-
 
 def extract_concept(drop_create=False):
     source_engine = get_source_engine()
@@ -135,7 +131,6 @@ def extract_concept(drop_create=False):
     else:
         warning("No data found in source concept table.")
 
-
 def extract_concept_answer(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
@@ -156,7 +151,6 @@ def extract_concept_answer(drop_create=False):
         info("Import completed successfully.")
     else:
         warning("No data found in source concept_answer table.")
-
 
 def extract_concept_class(drop_create=False):
     source_engine = get_source_engine()
@@ -179,7 +173,6 @@ def extract_concept_class(drop_create=False):
     else:
         warning("No data found in source concept_class table.")
 
-
 def extract_concept_complex(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
@@ -200,7 +193,6 @@ def extract_concept_complex(drop_create=False):
         info("Import completed successfully.")
     else:
         warning("No data found in source concept_complex table.")
-
 
 def extract_concept_datatype(drop_create=False):
     source_engine = get_source_engine()
@@ -223,7 +215,6 @@ def extract_concept_datatype(drop_create=False):
     else:
         warning("No data found in source concept_datatype table.")
 
-
 def extract_concept_description(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
@@ -244,7 +235,6 @@ def extract_concept_description(drop_create=False):
         info("Import completed successfully.")
     else:
         warning("No data found in source concept_description table.")
-
 
 def extract_concept_map(drop_create=False):
     source_engine = get_source_engine()
@@ -267,7 +257,6 @@ def extract_concept_map(drop_create=False):
     else:
         warning("No data found in source concept_map table.")
 
-
 def extract_concept_name(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
@@ -288,7 +277,6 @@ def extract_concept_name(drop_create=False):
         info("Import completed successfully.")
     else:
         warning("No data found in source concept_name table.")
-
 
 def extract_concept_name_tag(drop_create=False):
     source_engine = get_source_engine()
@@ -311,7 +299,6 @@ def extract_concept_name_tag(drop_create=False):
     else:
         warning("No data found in source concept_name_tag table.")
 
-
 def extract_concept_name_tag_map(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
@@ -332,7 +319,6 @@ def extract_concept_name_tag_map(drop_create=False):
         info("Import completed successfully.")
     else:
         warning("No data found in source concept_name_tag_map table.")
-
 
 def extract_concept_numeric(drop_create=False):
     source_engine = get_source_engine()
@@ -355,7 +341,6 @@ def extract_concept_numeric(drop_create=False):
     else:
         warning("No data found in source concept_numeric table.")
 
-
 def extract_concept_reference_source(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
@@ -376,7 +361,6 @@ def extract_concept_reference_source(drop_create=False):
         info("Import completed successfully.")
     else:
         warning("No data found in source concept_reference_source table.")
-
 
 def extract_concept_set(drop_create=False):
     source_engine = get_source_engine()
@@ -399,7 +383,6 @@ def extract_concept_set(drop_create=False):
     else:
         warning("No data found in source concept_set table.")
 
-
 def extract_concept_word(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
@@ -420,7 +403,6 @@ def extract_concept_word(drop_create=False):
         info("Import completed successfully.")
     else:
         warning("No data found in source concept_word table.")
-
 
 def extract_drug(drop_create=False):
     source_engine = get_source_engine()
@@ -443,7 +425,6 @@ def extract_drug(drop_create=False):
     else:
         warning("No data found in source drug table.")
 
-
 def extract_drug_ingredient(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
@@ -464,7 +445,6 @@ def extract_drug_ingredient(drop_create=False):
         info("Import completed successfully.")
     else:
         warning("No data found in source drug_ingredient table.")
-
 
 def extract_drug_order(drop_create=False):
     source_engine = get_source_engine()
@@ -501,26 +481,24 @@ def extract_drug_order(drop_create=False):
     else:
         warning("No data found in source drug_order table.")
 
-
 def extract_encounter(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
     if drop_create:
         create_encounter_table(target_engine, drop_create=drop_create)
     info("Fetching data from source encounter table...")
-    insert_query = text("INSERT IGNORE INTO _encounter (encounter_id, encounter_type, patient_id, location_id, form_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid) VALUES (:encounter_id, :encounter_type, :patient_id, :location_id, :form_id, :encounter_datetime, :creator, :date_created, :voided, :voided_by, :date_voided, :void_reason, :changed_by, :date_changed, :uuid)")
+    insert_query = text("INSERT IGNORE INTO _encounter (encounter_id, encounter_type, patient_id, provider_id, location_id, form_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid) VALUES (:encounter_id, :encounter_type, :patient_id, :provider_id, :location_id, :form_id, :encounter_datetime, :creator, :date_created, :voided, :voided_by, :date_voided, :void_reason, :changed_by, :date_changed, :uuid)")
     
     with source_engine.connect() as source_conn:
         # Using execution_options(yield_per=BATCH_SIZE) for batching
         result = source_conn.execution_options(yield_per=BATCH_SIZE).execute(text("SELECT * FROM encounter"))
-        
         batch = []
         count = 0
         batch_number = 1
         with target_engine.connect() as target_conn:
             for row in result:
                 batch.append({
-                    "encounter_id": row.encounter_id, "encounter_type": row.encounter_type, "patient_id": row.patient_id, "location_id": row.location_id, "form_id": row.form_id, "encounter_datetime": row.encounter_datetime, "creator": row.creator, "date_created": row.date_created, "voided": row.voided, "voided_by": row.voided_by, "date_voided": row.date_voided, "void_reason": row.void_reason, "changed_by": row.changed_by, "date_changed": row.date_changed, "uuid": row.uuid
+                    "encounter_id": row.encounter_id, "encounter_type": row.encounter_type, "patient_id": row.patient_id, "provider_id": row.provider_id, "location_id": row.location_id, "form_id": row.form_id, "encounter_datetime": row.encounter_datetime, "creator": row.creator, "date_created": row.date_created, "voided": row.voided, "voided_by": row.voided_by, "date_voided": row.date_voided, "void_reason": row.void_reason, "changed_by": row.changed_by, "date_changed": row.date_changed, "uuid": row.uuid
                 })
                 count += 1
                 if len(batch) >= BATCH_SIZE:
@@ -539,13 +517,11 @@ def extract_encounter(drop_create=False):
     else:
         warning("No data found in source encounter table.")
 
-
 def extract_encounter_provider(drop_create=False):
     target_engine = get_target_engine()
     if drop_create:
         create_encounter_provider_table(target_engine, drop_create=drop_create)
     # Note! The data for this table will be populated in the transformation step.
-
 
 def extract_encounter_type(drop_create=False):
     source_engine = get_source_engine()
@@ -568,7 +544,6 @@ def extract_encounter_type(drop_create=False):
     else:
         warning("No data found in source encounter_type table.")
 
-
 def extract_field(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
@@ -589,7 +564,6 @@ def extract_field(drop_create=False):
         info("Import completed successfully.")
     else:
         warning("No data found in source field table.")
-
 
 def extract_field_answer(drop_create=False):
     source_engine = get_source_engine()
@@ -612,7 +586,6 @@ def extract_field_answer(drop_create=False):
     else:
         warning("No data found in source field_answer table.")
 
-
 def extract_field_type(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
@@ -633,7 +606,6 @@ def extract_field_type(drop_create=False):
         info("Import completed successfully.")
     else:
         warning("No data found in source field_type table.")
-
 
 def extract_form(drop_create=False):
     source_engine = get_source_engine()
@@ -656,7 +628,6 @@ def extract_form(drop_create=False):
     else:
         warning("No data found in source form table.")
 
-
 def extract_form_field(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
@@ -677,7 +648,6 @@ def extract_form_field(drop_create=False):
         info("Import completed successfully.")
     else:
         warning("No data found in source form_field table.")
-
 
 def extract_global_property(drop_create=False):
     source_engine = get_source_engine()
@@ -700,7 +670,6 @@ def extract_global_property(drop_create=False):
     else:
         warning("No data found in source global_property table.")
 
-
 def extract_hl7_in_error(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
@@ -721,7 +690,6 @@ def extract_hl7_in_error(drop_create=False):
         info("Import completed successfully.")
     else:
         warning("No data found in source hl7_in_error table.")
-
 
 def extract_hl7_in_queue(drop_create=False):
     source_engine = get_source_engine()
@@ -744,7 +712,6 @@ def extract_hl7_in_queue(drop_create=False):
     else:
         warning("No data found in source hl7_in_queue table.")
 
-
 def extract_hl7_source(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
@@ -765,7 +732,6 @@ def extract_hl7_source(drop_create=False):
         info("Import completed successfully.")
     else:
         warning("No data found in source hl7_source table.")
-
 
 def extract_htmlformentry_html_form(drop_create=False):
     source_engine = get_source_engine()
@@ -788,7 +754,6 @@ def extract_htmlformentry_html_form(drop_create=False):
     else:
         warning("No data found in source htmlformentry_html_form table.")
 
-
 def extract_location(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
@@ -809,7 +774,6 @@ def extract_location(drop_create=False):
         info("Import completed successfully.")
     else:
         warning("No data found in source location table.")
-
 
 def extract_note(drop_create=False):
     source_engine = get_source_engine()
@@ -832,7 +796,6 @@ def extract_note(drop_create=False):
     else:
         warning("No data found in source note table.")
 
-
 def extract_notification_alert(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
@@ -854,7 +817,6 @@ def extract_notification_alert(drop_create=False):
     else:
         warning("No data found in source notification_alert table.")
 
-
 def extract_notification_alert_recipient(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
@@ -875,7 +837,6 @@ def extract_notification_alert_recipient(drop_create=False):
         info("Import completed successfully.")
     else:
         warning("No data found in source notification_alert_recipient table.")
-
 
 def extract_obs(drop_create=False, resume=False):
     source_engine = get_source_engine()
@@ -925,7 +886,6 @@ def extract_obs(drop_create=False, resume=False):
     else:
         warning("No data found in source obs table.")
 
-
 def extract_order_type(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
@@ -946,7 +906,6 @@ def extract_order_type(drop_create=False):
         info("Import completed successfully.")
     else:
         warning("No data found in source order_type table.")
-
 
 def extract_orders(drop_create=False):
     source_engine = get_source_engine()
@@ -981,7 +940,6 @@ def extract_orders(drop_create=False):
         info(f"Import completed successfully. Total {count} records imported.")
     else:
         warning("No data found in source orders table.")
-
 
 def extract_patient(drop_create=False):
     source_engine = get_source_engine()
@@ -1018,7 +976,6 @@ def extract_patient(drop_create=False):
     else:
         warning("No data found in source patient table.")
 
-
 def extract_patient_identifier(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
@@ -1054,7 +1011,6 @@ def extract_patient_identifier(drop_create=False):
     else:
         warning("No data found in source patient_identifier table.")
 
-
 def extract_patient_identifier_type(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
@@ -1075,7 +1031,6 @@ def extract_patient_identifier_type(drop_create=False):
         info("Import completed successfully.")
     else:
         warning("No data found in source patient_identifier_type table.")
-
 
 def extract_patient_program(drop_create=False):
     source_engine = get_source_engine()
@@ -1112,7 +1067,6 @@ def extract_patient_program(drop_create=False):
     else:
         warning("No data found in source patient_program table.")
 
-
 def extract_person(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
@@ -1147,7 +1101,6 @@ def extract_person(drop_create=False):
         info(f"Import completed successfully. Total {count} records imported.")
     else:
         warning("No data found in source person table.")
-
 
 def extract_person_address(drop_create=False):
     source_engine = get_source_engine()
@@ -1184,7 +1137,6 @@ def extract_person_address(drop_create=False):
     else:
         warning("No data found in source person_address table.")
 
-
 def extract_person_attribute(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
@@ -1220,7 +1172,6 @@ def extract_person_attribute(drop_create=False):
     else:
         warning("No data found in source person_attribute table.")
 
-
 def extract_person_attribute_type(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
@@ -1241,7 +1192,6 @@ def extract_person_attribute_type(drop_create=False):
         info("Import completed successfully.")
     else:
         warning("No data found in source person_attribute_type table.")
-
 
 def extract_person_name(drop_create=False):
     source_engine = get_source_engine()
@@ -1278,7 +1228,6 @@ def extract_person_name(drop_create=False):
     else:
         warning("No data found in source person_name table.")
 
-
 def extract_privilege(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
@@ -1299,7 +1248,6 @@ def extract_privilege(drop_create=False):
         info("Import completed successfully.")
     else:
         warning("No data found in source privilege table.")
-
 
 def extract_program(drop_create=False):
     source_engine = get_source_engine()
@@ -1322,7 +1270,6 @@ def extract_program(drop_create=False):
     else:
         warning("No data found in source program table.")
 
-
 def extract_program_workflow(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
@@ -1343,7 +1290,6 @@ def extract_program_workflow(drop_create=False):
         info("Import completed successfully.")
     else:
         warning("No data found in source program_workflow table.")
-
 
 def extract_program_workflow_state(drop_create=False):
     source_engine = get_source_engine()
@@ -1366,6 +1312,11 @@ def extract_program_workflow_state(drop_create=False):
     else:
         warning("No data found in source program_workflow_state table.")
 
+def extract_provider(drop_create=False):
+    target_engine = get_target_engine()
+    if drop_create:
+        create_provider_table(target_engine, drop_create=drop_create)
+    # Note! The data for this table will be populated in the transformation step.
 
 def extract_relationship_type(drop_create=False):
     source_engine = get_source_engine()
@@ -1388,7 +1339,6 @@ def extract_relationship_type(drop_create=False):
     else:
         warning("No data found in source relationship_type table.")
 
-
 def extract_report_object(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
@@ -1409,7 +1359,6 @@ def extract_report_object(drop_create=False):
         info("Import completed successfully.")
     else:
         warning("No data found in source report_object table.")
-
 
 def extract_report_schema_xml(drop_create=False):
     source_engine = get_source_engine()
@@ -1432,7 +1381,6 @@ def extract_report_schema_xml(drop_create=False):
     else:
         warning("No data found in source report_schema_xml table.")
 
-
 def extract_role(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
@@ -1453,7 +1401,6 @@ def extract_role(drop_create=False):
         info("Import completed successfully.")
     else:
         warning("No data found in source role table.")
-
 
 def extract_role_privilege(drop_create=False):
     source_engine = get_source_engine()
@@ -1476,7 +1423,6 @@ def extract_role_privilege(drop_create=False):
     else:
         warning("No data found in source role_privilege table.")
 
-
 def extract_role_role(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
@@ -1497,7 +1443,6 @@ def extract_role_role(drop_create=False):
         info("Import completed successfully.")
     else:
         warning("No data found in source role_role table.")
-
 
 def extract_serialized_object(drop_create=False):
     source_engine = get_source_engine()
@@ -1534,7 +1479,6 @@ def extract_serialized_object(drop_create=False):
     else:
         warning("No data found in source serialized_object table.")
 
-
 def extract_users(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
@@ -1555,7 +1499,6 @@ def extract_users(drop_create=False):
         info("Import completed successfully.")
     else:
         warning("No data found in source users table.")
-
 
 def extract_user_property(drop_create=False):
     source_engine = get_source_engine()
