@@ -456,6 +456,24 @@ uuid char(38),
 PRIMARY KEY (hl7_source_id)
 );
 
+CREATE TABLE _htmlformentry_html_form (
+id int(10) NOT NULL,
+form_id int(10),
+name varchar(255),
+xml_data mediumtext NOT NULL,
+creator int(10) NOT NULL,
+date_created datetime NOT NULL,
+changed_by int(10),
+date_changed datetime,
+retired bit(1) NOT NULL,
+uuid char(38) NOT NULL,
+description varchar(1000),
+retired_by int(10),
+date_retired datetime,
+retire_reason varchar(255),
+PRIMARY KEY (id)
+);
+
 CREATE TABLE _location (
 location_id int(10) NOT NULL,
 name varchar(255) NOT NULL,
@@ -482,6 +500,47 @@ retire_reason varchar(255),
 parent_location int(10),
 uuid char(38),
 PRIMARY KEY (location_id)
+);
+
+CREATE TABLE _metadatasharing_exported_package (
+exported_package_id int(10) NOT NULL,
+uuid char(38) NOT NULL,
+group_uuid char(38) NOT NULL,
+version int(10) NOT NULL,
+published bit(1) NOT NULL,
+date_created datetime NOT NULL,
+name varchar(64) NOT NULL,
+description varchar(256) NOT NULL,
+content longblob,
+PRIMARY KEY (exported_package_id)
+);
+
+CREATE TABLE _metadatasharing_imported_item (
+imported_item_id int(10) NOT NULL,
+uuid char(38) NOT NULL,
+classname varchar(256) NOT NULL,
+existing_uuid char(38),
+date_imported datetime,
+date_changed datetime,
+import_type tinyint(3),
+assessed bit(1) NOT NULL,
+PRIMARY KEY (imported_item_id)
+);
+
+CREATE TABLE _metadatasharing_imported_package (
+imported_package_id int(10) NOT NULL,
+uuid char(38) NOT NULL,
+group_uuid char(38) NOT NULL,
+subscription_url varchar(512),
+subscription_status tinyint(3),
+date_created datetime NOT NULL,
+date_imported datetime,
+name varchar(64),
+description varchar(256),
+import_config varchar(1024),
+remote_version int(10),
+version int(10),
+PRIMARY KEY (imported_package_id)
 );
 
 CREATE TABLE _note (
@@ -804,6 +863,79 @@ uuid char(38) NOT NULL,
 PRIMARY KEY (program_id)
 );
 
+CREATE TABLE _program_workflow (
+program_workflow_id int(10) NOT NULL,
+program_id int(10) NOT NULL,
+concept_id int(10) NOT NULL,
+creator int(10) NOT NULL,
+date_created datetime NOT NULL,
+retired bit(1) NOT NULL,
+changed_by int(10),
+date_changed datetime,
+uuid char(38),
+PRIMARY KEY (program_workflow_id)
+);
+
+CREATE TABLE _program_workflow_state (
+program_workflow_state_id int(10) NOT NULL,
+program_workflow_id int(10) NOT NULL,
+concept_id int(10) NOT NULL,
+initial bit(1) NOT NULL,
+terminal bit(1) NOT NULL,
+creator int(10) NOT NULL,
+date_created datetime NOT NULL,
+retired bit(1) NOT NULL,
+changed_by int(10),
+date_changed datetime,
+uuid char(38),
+PRIMARY KEY (program_workflow_state_id)
+);
+
+CREATE TABLE _relationship_type (
+relationship_type_id int(10) NOT NULL,
+a_is_to_b varchar(50) NOT NULL,
+b_is_to_a varchar(50) NOT NULL,
+preferred int(10) NOT NULL,
+weight int(10) NOT NULL,
+description varchar(255) NOT NULL,
+creator int(10) NOT NULL,
+date_created datetime NOT NULL,
+uuid char(38) NOT NULL,
+retired bit(1) NOT NULL,
+retired_by int(10),
+date_retired datetime,
+retire_reason varchar(255),
+PRIMARY KEY (relationship_type_id)
+);
+
+CREATE TABLE _report_object (
+report_object_id int(10) NOT NULL,
+name varchar(255) NOT NULL,
+description varchar(1000),
+report_object_type varchar(255) NOT NULL,
+report_object_sub_type varchar(255) NOT NULL,
+xml_data text,
+creator int(10) NOT NULL,
+date_created datetime NOT NULL,
+changed_by int(10),
+date_changed datetime,
+voided bit(1) NOT NULL,
+voided_by int(10),
+date_voided datetime,
+void_reason varchar(255),
+uuid char(38),
+PRIMARY KEY (report_object_id)
+);
+
+CREATE TABLE _report_schema_xml (
+report_schema_id int(10) NOT NULL,
+name varchar(255) NOT NULL,
+description text NOT NULL,
+xml_data text NOT NULL,
+uuid char(38),
+PRIMARY KEY (report_schema_id)
+);
+
 CREATE TABLE _role (
 role varchar(50) NOT NULL,
 description varchar(255) NOT NULL,
@@ -821,6 +953,33 @@ CREATE TABLE _role_role (
 parent_role varchar(50) NOT NULL,
 child_role varchar(50) NOT NULL,
 PRIMARY KEY (parent_role,child_role)
+);
+
+CREATE TABLE _scheduler_task_config (
+task_config_id int(10) NOT NULL,
+name varchar(255) NOT NULL,
+description varchar(1024),
+schedulable_class text,
+start_time datetime,
+start_time_pattern varchar(50),
+repeat_interval int(10) NOT NULL,
+start_on_startup int(10) NOT NULL,
+started int(10) NOT NULL,
+created_by int(10),
+date_created datetime,
+changed_by int(10),
+date_changed datetime,
+uuid char(38) NOT NULL,
+last_execution_time datetime,
+PRIMARY KEY (task_config_id)
+);
+
+CREATE TABLE _scheduler_task_config_property (
+task_config_property_id int(10) NOT NULL,
+name varchar(255) NOT NULL,
+value text,
+task_config_id int(10),
+PRIMARY KEY (task_config_property_id)
 );
 
 CREATE TABLE _serialized_object (
@@ -862,4 +1021,11 @@ date_retired datetime,
 retire_reason varchar(255),
 uuid char(38),
 PRIMARY KEY (user_id)
+);
+
+CREATE TABLE _user_property (
+user_id int(10) NOT NULL,
+property varchar(100) NOT NULL,
+property_value varchar(255) NOT NULL,
+PRIMARY KEY (user_id,property)
 );
