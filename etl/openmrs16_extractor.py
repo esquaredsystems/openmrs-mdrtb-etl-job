@@ -1,7 +1,10 @@
-from sqlalchemy import text, false
+import numpy as np
+import pandas as pd
+from uuid import uuid4
 from config.database import get_source_engine, get_target_engine
 from config.config import BATCH_SIZE
 from utils.logger import info, warning
+from utils.helpers import read_excel_sheet
 from models.schema_models import *
 
 
@@ -258,25 +261,35 @@ def extract_concept_map(drop_create=False):
         warning("No data found in source concept_map table.")
 
 def extract_concept_name(drop_create=False):
-    source_engine = get_source_engine()
     target_engine = get_target_engine()
     if drop_create:
         create_concept_name_table(target_engine, drop_create=drop_create)
-    info("Fetching data from source concept_name table...")
-    with source_engine.connect() as source_conn:
-        source_data = source_conn.execute(text("SELECT * FROM concept_name")).fetchall()
-    if source_data:
-        info(f"Inserting {len(source_data)} records into target _concept_name table...")
+
+    df = read_excel_sheet('concept_mapping.xlsx', 'concept_name')
+    df = df.where(pd.notna(df), None)
+    if not df.empty:
+        info(f"Inserting {len(df)} records from concept_mapping.xlsx concept_name sheet into target _concept_name table...")
+        df = df.rename(columns={"type": "concept_name_type"})
         insert_query = text("INSERT IGNORE INTO _concept_name (concept_name_id, concept_id, name, locale, locale_preferred, creator, date_created, concept_name_type, voided, voided_by, date_voided, void_reason, uuid) VALUES (:concept_name_id, :concept_id, :name, :locale, :locale_preferred, :creator, :date_created, :concept_name_type, :voided, :voided_by, :date_voided, :void_reason, :uuid)")
         with target_engine.connect() as target_conn:
-            for row in source_data:
-                target_conn.execute(insert_query, {
-                    "concept_name_id": row.concept_name_id, "concept_id": row.concept_id, "name": row.name, "locale": row.locale, "locale_preferred": 0, "creator": row.creator, "date_created": row.date_created, "concept_name_type": "FULLY_SPECIFIED", "voided": row.voided, "voided_by": row.voided_by, "date_voided": row.date_voided, "void_reason": row.void_reason, "uuid": row.uuid
-                })
+            max_id = target_conn.execute(text("SELECT COALESCE(MAX(concept_name_id), 0) FROM _concept_name")).scalar()
+            df["concept_name_id"] = range(max_id + 1, max_id + len(df) + 1)
+            df["locale_preferred"] = 0
+            df["creator"] = 1
+            df["date_created"] = pd.Timestamp.now()
+            df["voided"] = 0
+            df["voided_by"] = None
+            df["date_voided"] = None
+            df["void_reason"] = None
+            df["uuid"] = [str(uuid4()) for _ in range(len(df))]
+            source_data = df[[
+                "concept_name_id", "concept_id", "name", "locale", "locale_preferred", "creator",
+                "date_created", "concept_name_type", "voided", "voided_by", "date_voided",
+                "void_reason", "uuid"
+            ]].to_dict(orient='records')
+            target_conn.execute(insert_query, source_data)
             target_conn.commit()
-        info("Import completed successfully.")
-    else:
-        warning("No data found in source concept_name table.")
+        info("Import from concept_mapping.xlsx concept_name sheet completed successfully.")
 
 def extract_concept_name_tag(drop_create=False):
     source_engine = get_source_engine()
@@ -342,25 +355,28 @@ def extract_concept_numeric(drop_create=False):
         warning("No data found in source concept_numeric table.")
 
 def extract_concept_reference_source(drop_create=False):
-    source_engine = get_source_engine()
     target_engine = get_target_engine()
     if drop_create:
         create_concept_reference_source_table(target_engine, drop_create=drop_create)
-    info("Fetching data from source concept_reference_source table...")
-    with source_engine.connect() as source_conn:
-        source_data = source_conn.execute(text("SELECT * FROM concept_source")).fetchall()
-    if source_data:
-        info(f"Inserting {len(source_data)} records into target _concept_reference_source table...")
+
+    df = read_excel_sheet('concept_mapping.xlsx', 'concept_source')
+    if not df.empty:
+        info(f"Inserting {len(df)} records into target _concept_reference_source table...")
+        df = df.replace({np.nan: None})  # critical line
         insert_query = text("INSERT IGNORE INTO _concept_reference_source (concept_source_id, name, description, hl7_code, creator, date_created, retired, retired_by, date_retired, retire_reason, uuid) VALUES (:concept_source_id, :name, :description, :hl7_code, :creator, :date_created, :retired, :retired_by, :date_retired, :retire_reason, :uuid)")
+        source_data = df.to_dict(orient='records')
+
         with target_engine.connect() as target_conn:
-            for row in source_data:
-                target_conn.execute(insert_query, {
-                    "concept_source_id": row.concept_source_id, "name": row.name, "description": row.description, "hl7_code": row.hl7_code, "creator": row.creator, "date_created": row.date_created, "retired": row.retired, "retired_by": row.retired_by, "date_retired": row.date_retired, "retire_reason": row.retire_reason, "uuid": row.uuid
-                })
+            target_conn.execute(insert_query, source_data)
             target_conn.commit()
         info("Import completed successfully.")
-    else:
-        warning("No data found in source concept_reference_source table.")
+
+def extract_concept_reference_term_table(drop_create=False):
+    target_engine = get_target_engine()
+    if drop_create:
+        create_concept_reference_term_table(target_engine, drop_create=drop_create)
+    # Note! The data for this table will be populated in the transformation step.
+
 
 def extract_concept_set(drop_create=False):
     source_engine = get_source_engine()
@@ -1520,3 +1536,24 @@ def extract_user_property(drop_create=False):
         info("Import completed successfully.")
     else:
         warning("No data found in source user_property table.")
+
+def extract_user_role(drop_create=False):
+    source_engine = get_source_engine()
+    target_engine = get_target_engine()
+    if drop_create:
+        create_user_role_table(target_engine, drop_create=drop_create)
+    info("Fetching data from source user_role table...")
+    insert_query = text("INSERT IGNORE INTO _user_role (user_id, role) VALUES (:user_id, :role)")
+    with source_engine.connect() as source_conn:
+        source_data = source_conn.execute(text("SELECT * FROM user_role")).fetchall()
+    if source_data:
+        info(f"Inserting {len(source_data)} records into target _user_role table...")
+        with target_engine.connect() as target_conn:
+            for row in source_data:
+                target_conn.execute(insert_query, {
+                    "user_id": row.user_id, "role": row.role
+                })
+            target_conn.commit()
+        info("Import completed successfully.")
+    else:
+        warning("No data found in source user_role table.")

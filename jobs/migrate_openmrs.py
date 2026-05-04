@@ -1,10 +1,10 @@
 from etl.openmrs16_extractor import *
 from etl.openmrs25_loader import *
-from etl.openmrs_transformer import transform_provider, transform_encounter_provider
+from etl.openmrs_transformer import transform_provider, transform_encounter_provider, transform_concept_reference_term
 from utils.logger import info
 import time
 
-
+##### Extraction functions #####
 def extract_address_hierarchy_group(drop_create):
     start_time = time.time()
     extract_address_hierarchy_level(drop_create=drop_create)
@@ -117,7 +117,9 @@ def extract_user_group(drop_create):
     extract_users(drop_create=drop_create)
     info("Users table created successfully")
     extract_user_property(drop_create=drop_create)
-    info(f"User property table created successfully (Time: {time.time() - start_time:.2f} seconds)")
+    info("User property table created successfully")
+    extract_user_role(drop_create=drop_create)
+    info(f"User role table created successfully (Time: {time.time() - start_time:.2f} seconds)")
 
 def extract_report_group(drop_create):
     start_time = time.time()
@@ -166,6 +168,8 @@ def extract_encounter_group(drop_create):
     info("Encounter type table created successfully")
     extract_encounter(drop_create=drop_create)
     info("Encounter table created successfully")
+    extract_provider(drop_create=drop_create)
+    info("Provider table created successfully")
     extract_encounter_provider(drop_create=drop_create)
     info(f"Encounter provider table created successfully (Time: {time.time() - start_time:.2f} seconds)")
 
@@ -174,6 +178,84 @@ def extract_obs_group(drop_create):
     extract_obs(drop_create=drop_create, resume=True)
     info(f"Obs table created successfully (Time: {time.time() - start_time:.2f} seconds)")
 
+
+##### Loading functions #####
+def load_user_group():
+    load_privilege()
+    load_role()
+    load_role_role()
+    load_role_privilege()
+    load_users()
+    load_user_property()
+    load_user_role()
+
+def load_address_hierarchy_group():
+    load_address_hierarchy_level()
+    load_address_hierarchy_entry()
+
+def load_cohort_group():
+    load_cohort()
+
+def load_concept_group():
+    # Sequenced to avoid foreign key constraint error
+    load_concept_datatype()
+    load_concept_class()
+    load_concept()
+    load_concept_name_tag()
+    load_concept_reference_source()
+    load_concept_reference_term()
+    load_concept_answer()
+    load_concept_complex()
+    load_concept_name()
+    load_concept_description()
+    load_concept_numeric()
+
+def load_drug_group():
+    load_drug()
+    load_drug_ingredient()
+    load_drug_order()
+
+def load_form_group():
+    load_field()
+    load_field_type()
+    load_form_field()
+    load_form()
+    load_htmlformentry_html_form()
+
+def load_hl7_group():
+    load_hl7_source()
+    load_hl7_error()
+    load_hl7_queue()
+
+def load_location_group():
+    pass
+
+def load_orders_group():
+    pass
+
+def load_program_group():
+    load_program()
+    load_program_workflow()
+    load_program_workflow_state()
+
+def load_report_group():
+    pass
+
+def load_misc_group():
+    load_global_property()
+    load_relationship_type()
+
+def load_patient_group():
+    pass
+
+def load_encounter_group():
+    pass
+
+def load_obs_group():
+    pass
+
+
+##### Caller functions #####
 def run_extract_job(hard_reset=False):
     start_time = time.time()
     extract_address_hierarchy_group(hard_reset)
@@ -196,24 +278,25 @@ def run_extract_job(hard_reset=False):
 def run_transform_job():
     start_time = time.time()
     transform_provider()
-    transform_encounter_provider()
+    # transform_encounter_provider()
+    transform_concept_reference_term()
     info(f"Transformation job completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
 def run_load_job():
     start_time = time.time()
-    load_field()
-    load_field_type()
-    load_form_field()
-    load_form()
-    load_htmlformentry_html_form()
-    load_program()
-    load_program_workflow()
-    load_program_workflow_state()
-    load_hl7_source()
-    load_hl7_error()
-    load_hl7_queue()
-    load_relationship_type()
-    load_cohort()
-    load_scheduler_task_config()
-    load_global_property()
+    load_user_group()
+    load_address_hierarchy_group()
+    load_cohort_group()
+    load_concept_group()
+    load_drug_group()
+    # load_form_group()
+    # load_hl7_group()
+    # load_location_group()
+    # load_orders_group()
+    # load_program_group()
+    # load_report_group()
+    # load_misc_group()
+    # load_patient_group()
+    # load_encounter_group()
+    # load_obs_group()
     info(f"Load job completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")

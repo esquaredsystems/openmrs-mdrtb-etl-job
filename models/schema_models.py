@@ -148,6 +148,15 @@ def create_concept_reference_source_table(engine, drop_create=False):
         conn.commit()
 
 
+def create_concept_reference_term_table(engine, drop_create=False):
+    with engine.connect() as conn:
+        if drop_create:
+            conn.execute(text("DROP TABLE IF EXISTS _concept_reference_term"))
+        create_query = "CREATE TABLE _concept_reference_term (concept_reference_term_id int NOT NULL, concept_source_id int NOT NULL, name varchar(255) DEFAULT NULL, code varchar(255) NOT NULL, version varchar(255) DEFAULT NULL, description varchar(255) DEFAULT NULL, creator int NOT NULL, date_created datetime NOT NULL, date_changed datetime DEFAULT NULL, changed_by int DEFAULT NULL, retired bit(1) NOT NULL, retired_by int DEFAULT NULL, date_retired datetime DEFAULT NULL, retire_reason varchar(255) DEFAULT NULL, uuid char(38) NOT NULL, PRIMARY KEY (concept_reference_term_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3"
+        conn.execute(text(create_query))
+        conn.commit()
+
+
 def create_concept_set_table(engine, drop_create=False):
     with engine.connect() as conn:
         if drop_create:
@@ -574,6 +583,15 @@ def create_user_property_table(engine, drop_create=False):
         if drop_create:
             conn.execute(text("DROP TABLE IF EXISTS _user_property"))
         create_query = "CREATE TABLE _user_property (user_id int(10) NOT NULL, property varchar(100) NOT NULL, property_value varchar(255) NOT NULL, PRIMARY KEY (user_id,property)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        conn.execute(text(create_query))
+        conn.commit()
+
+
+def create_user_role_table(engine, drop_create=False):
+    with engine.connect() as conn:
+        if drop_create:
+            conn.execute(text("DROP TABLE IF EXISTS _user_role"))
+        create_query = "CREATE TABLE _user_role (user_id int(10) NOT NULL, role varchar(50) NOT NULL, PRIMARY KEY (user_id,role)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         conn.execute(text(create_query))
         conn.commit()
 

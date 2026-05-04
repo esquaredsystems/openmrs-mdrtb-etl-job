@@ -1050,3 +1050,9 @@ property varchar(100) NOT NULL,
 property_value varchar(255) NOT NULL,
 PRIMARY KEY (user_id,property)
 );
+
+CREATE TABLE _user_role (
+user_id int(10) NOT NULL,
+role varchar(50) NOT NULL,
+PRIMARY KEY (user_id,role)
+);
