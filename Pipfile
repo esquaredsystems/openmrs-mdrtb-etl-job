@@ -11,6 +11,8 @@ python-dotenv = "*"
 loguru = "*"
 tqdm = "*"
 alembic = "*"
+openpyxl = "*"
+pytest = "*"
 
 [dev-packages]
 
