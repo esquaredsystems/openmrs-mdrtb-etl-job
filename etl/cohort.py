@@ -15,13 +15,17 @@ def extract_cohort(drop_create=False):
         create_cohort_table(target_engine, drop_create=drop_create)
 
     info("Fetching data from source cohort table...")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _cohort"))
+        target_conn.commit()
+
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM cohort")).fetchall()
 
     if source_data:
         info(f"Inserting {len(source_data)} records into target _cohort table...")
         insert_query = text("""
-        INSERT IGNORE INTO _cohort (cohort_id, name, description, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid) 
+        INSERT INTO _cohort (cohort_id, name, description, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid) 
         VALUES (:cohort_id, :name, :description, :creator, :date_created, :voided, :voided_by, :date_voided, :void_reason, :changed_by, :date_changed, :uuid)
         """)
         
@@ -42,11 +46,15 @@ def extract_cohort_member(drop_create=False):
     if drop_create:
         create_cohort_member_table(target_engine, drop_create=drop_create)
     info("Fetching data from source cohort_member table...")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _cohort_member"))
+        target_conn.commit()
+
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM cohort_member")).fetchall()
     if source_data:
         info(f"Inserting {len(source_data)} records into target _cohort_member table...")
-        insert_query = text("INSERT IGNORE INTO _cohort_member (cohort_id, patient_id) VALUES (:cohort_id, :patient_id)")
+        insert_query = text("INSERT INTO _cohort_member (cohort_id, patient_id) VALUES (:cohort_id, :patient_id)")
         with target_engine.connect() as target_conn:
             for row in source_data:
                 target_conn.execute(insert_query, {

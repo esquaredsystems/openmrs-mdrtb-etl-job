@@ -14,7 +14,11 @@ def extract_orders(drop_create=False):
     if drop_create:
         create_orders_table(target_engine, drop_create=drop_create)
     info("Fetching data from source orders table...")
-    insert_query = text("INSERT IGNORE INTO _orders (order_id, order_type_id, concept_id, orderer, encounter_id, instructions, start_date, auto_expire_date, discontinued, discontinued_date, discontinued_by, discontinued_reason, discontinued_reason_non_coded, creator, date_created, voided, voided_by, date_voided, void_reason, patient_id, accession_number, uuid) VALUES (:order_id, :order_type_id, :concept_id, :orderer, :encounter_id, :instructions, :start_date, :auto_expire_date, :discontinued, :discontinued_date, :discontinued_by, :discontinued_reason, :discontinued_reason_non_coded, :creator, :date_created, :voided, :voided_by, :date_voided, :void_reason, :patient_id, :accession_number, :uuid)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _orders"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _orders (order_id, order_type_id, concept_id, orderer, encounter_id, instructions, start_date, auto_expire_date, discontinued, discontinued_date, discontinued_by, discontinued_reason, discontinued_reason_non_coded, creator, date_created, voided, voided_by, date_voided, void_reason, patient_id, accession_number, uuid) VALUES (:order_id, :order_type_id, :concept_id, :orderer, :encounter_id, :instructions, :start_date, :auto_expire_date, :discontinued, :discontinued_date, :discontinued_by, :discontinued_reason, :discontinued_reason_non_coded, :creator, :date_created, :voided, :voided_by, :date_voided, :void_reason, :patient_id, :accession_number, :uuid)")
     
     with source_engine.connect() as source_conn:
         result = source_conn.execution_options(yield_per=BATCH_SIZE).execute(text("SELECT * FROM orders"))
@@ -48,7 +52,11 @@ def extract_order_type(drop_create=False):
     if drop_create:
         create_order_type_table(target_engine, drop_create=drop_create)
     info("Fetching data from source order_type table...")
-    insert_query = text("INSERT IGNORE INTO _order_type (order_type_id, name, description, creator, date_created, retired, retired_by, date_retired, retire_reason, uuid) VALUES (:order_type_id, :name, :description, :creator, :date_created, :retired, :retired_by, :date_retired, :retire_reason, :uuid)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _order_type"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _order_type (order_type_id, name, description, creator, date_created, retired, retired_by, date_retired, retire_reason, uuid) VALUES (:order_type_id, :name, :description, :creator, :date_created, :retired, :retired_by, :date_retired, :retire_reason, :uuid)")
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM order_type")).fetchall()
     if source_data:

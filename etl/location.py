@@ -13,7 +13,11 @@ def extract_location(drop_create=False):
     if drop_create:
         create_location_table(target_engine, drop_create=drop_create)
     info("Fetching data from source location table...")
-    insert_query = text("INSERT IGNORE INTO _location (location_id, name, description, address1, address2, city_village, state_province, postal_code, country, latitude, longitude, creator, date_created, county_district, address3, address4, address5, address6, retired, retired_by, date_retired, retire_reason, parent_location, uuid) VALUES (:location_id, :name, :description, :address1, :address2, :city_village, :state_province, :postal_code, :country, :latitude, :longitude, :creator, :date_created, :county_district, :address3, :address4, :address5, :address6, :retired, :retired_by, :date_retired, :retire_reason, :parent_location, :uuid)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _location"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _location (location_id, name, description, address1, address2, city_village, state_province, postal_code, country, latitude, longitude, creator, date_created, county_district, address3, address4, address5, address6, retired, retired_by, date_retired, retire_reason, parent_location, uuid) VALUES (:location_id, :name, :description, :address1, :address2, :city_village, :state_province, :postal_code, :country, :latitude, :longitude, :creator, :date_created, :county_district, :address3, :address4, :address5, :address6, :retired, :retired_by, :date_retired, :retire_reason, :parent_location, :uuid)")
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM location")).fetchall()
     if source_data:

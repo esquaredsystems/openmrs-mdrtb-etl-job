@@ -14,7 +14,11 @@ def extract_patient(drop_create=False):
     if drop_create:
         create_patient_table(target_engine, drop_create=drop_create)
     info("Fetching data from source patient table...")
-    insert_query = text("INSERT IGNORE INTO _patient (patient_id, tribe, creator, date_created, changed_by, date_changed, voided, voided_by, date_voided, void_reason) VALUES (:patient_id, :tribe, :creator, :date_created, :changed_by, :date_changed, :voided, :voided_by, :date_voided, :void_reason)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _patient"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _patient (patient_id, tribe, creator, date_created, changed_by, date_changed, voided, voided_by, date_voided, void_reason) VALUES (:patient_id, :tribe, :creator, :date_created, :changed_by, :date_changed, :voided, :voided_by, :date_voided, :void_reason)")
     
     with source_engine.connect() as source_conn:
         result = source_conn.execution_options(yield_per=BATCH_SIZE).execute(text("SELECT * FROM patient"))
@@ -49,7 +53,11 @@ def extract_patient_identifier(drop_create=False):
     if drop_create:
         create_patient_identifier_table(target_engine, drop_create=drop_create)
     info("Fetching data from source patient_identifier table...")
-    insert_query = text("INSERT IGNORE INTO _patient_identifier (patient_identifier_id, patient_id, identifier, identifier_type, preferred, location_id, creator, date_created, voided, voided_by, date_voided, void_reason, uuid) VALUES (:patient_identifier_id, :patient_id, :identifier, :identifier_type, :preferred, :location_id, :creator, :date_created, :voided, :voided_by, :date_voided, :void_reason, :uuid)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _patient_identifier"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _patient_identifier (patient_identifier_id, patient_id, identifier, identifier_type, preferred, location_id, creator, date_created, voided, voided_by, date_voided, void_reason, uuid) VALUES (:patient_identifier_id, :patient_id, :identifier, :identifier_type, :preferred, :location_id, :creator, :date_created, :voided, :voided_by, :date_voided, :void_reason, :uuid)")
     
     with source_engine.connect() as source_conn:
         result = source_conn.execution_options(yield_per=BATCH_SIZE).execute(text("SELECT * FROM patient_identifier"))
@@ -84,7 +92,11 @@ def extract_patient_identifier_type(drop_create=False):
     if drop_create:
         create_patient_identifier_type_table(target_engine, drop_create=drop_create)
     info("Fetching data from source patient_identifier_type table...")
-    insert_query = text("INSERT IGNORE INTO _patient_identifier_type (patient_identifier_type_id, name, description, format, check_digit, creator, date_created, required, format_description, validator, retired, retired_by, date_retired, retire_reason, uuid) VALUES (:patient_identifier_type_id, :name, :description, :format, :check_digit, :creator, :date_created, :required, :format_description, :validator, :retired, :retired_by, :date_retired, :retire_reason, :uuid)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _patient_identifier_type"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _patient_identifier_type (patient_identifier_type_id, name, description, format, check_digit, creator, date_created, required, format_description, validator, retired, retired_by, date_retired, retire_reason, uuid) VALUES (:patient_identifier_type_id, :name, :description, :format, :check_digit, :creator, :date_created, :required, :format_description, :validator, :retired, :retired_by, :date_retired, :retire_reason, :uuid)")
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM patient_identifier_type")).fetchall()
     if source_data:
@@ -105,7 +117,11 @@ def extract_patient_program(drop_create=False):
     if drop_create:
         create_patient_program_table(target_engine, drop_create=drop_create)
     info("Fetching data from source patient_program table...")
-    insert_query = text("INSERT IGNORE INTO _patient_program (patient_program_id, patient_id, program_id, date_enrolled, date_completed, location_id, creator, date_created, changed_by, date_changed, voided, voided_by, date_voided, void_reason, uuid) VALUES (:patient_program_id, :patient_id, :program_id, :date_enrolled, :date_completed, :location_id, :creator, :date_created, :changed_by, :date_changed, :voided, :voided_by, :date_voided, :void_reason, :uuid)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _patient_program"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _patient_program (patient_program_id, patient_id, program_id, date_enrolled, date_completed, location_id, creator, date_created, changed_by, date_changed, voided, voided_by, date_voided, void_reason, uuid) VALUES (:patient_program_id, :patient_id, :program_id, :date_enrolled, :date_completed, :location_id, :creator, :date_created, :changed_by, :date_changed, :voided, :voided_by, :date_voided, :void_reason, :uuid)")
     
     with source_engine.connect() as source_conn:
         result = source_conn.execution_options(yield_per=BATCH_SIZE).execute(text("SELECT * FROM patient_program"))
@@ -140,7 +156,11 @@ def extract_person(drop_create=False):
     if drop_create:
         create_person_table(target_engine, drop_create=drop_create)
     info("Fetching data from source person table...")
-    insert_query = text("INSERT IGNORE INTO _person (person_id, gender, birthdate, birthdate_estimated, dead, death_date, cause_of_death, creator, date_created, changed_by, date_changed, voided, voided_by, date_voided, void_reason, uuid) VALUES (:person_id, :gender, :birthdate, :birthdate_estimated, :dead, :death_date, :cause_of_death, :creator, :date_created, :changed_by, :date_changed, :voided, :voided_by, :date_voided, :void_reason, :uuid)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _person"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _person (person_id, gender, birthdate, birthdate_estimated, dead, death_date, cause_of_death, creator, date_created, changed_by, date_changed, voided, voided_by, date_voided, void_reason, uuid) VALUES (:person_id, :gender, :birthdate, :birthdate_estimated, :dead, :death_date, :cause_of_death, :creator, :date_created, :changed_by, :date_changed, :voided, :voided_by, :date_voided, :void_reason, :uuid)")
     
     with source_engine.connect() as source_conn:
         result = source_conn.execution_options(yield_per=BATCH_SIZE).execute(text("SELECT * FROM person"))
@@ -175,7 +195,11 @@ def extract_person_address(drop_create=False):
     if drop_create:
         create_person_address_table(target_engine, drop_create=drop_create)
     info("Fetching data from source person_address table...")
-    insert_query = text("INSERT IGNORE INTO _person_address (person_address_id, person_id, preferred, address1, address2, city_village, state_province, postal_code, country, latitude, longitude, creator, date_created, voided, voided_by, date_voided, void_reason, county_district, address3, address4, address5, address6, uuid) VALUES (:person_address_id, :person_id, :preferred, :address1, :address2, :city_village, :state_province, :postal_code, :country, :latitude, :longitude, :creator, :date_created, :voided, :voided_by, :date_voided, :void_reason, :county_district, :address3, :address4, :address5, :address6, :uuid)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _person_address"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _person_address (person_address_id, person_id, preferred, address1, address2, city_village, state_province, postal_code, country, latitude, longitude, creator, date_created, voided, voided_by, date_voided, void_reason, county_district, address3, address4, address5, address6, uuid) VALUES (:person_address_id, :person_id, :preferred, :address1, :address2, :city_village, :state_province, :postal_code, :country, :latitude, :longitude, :creator, :date_created, :voided, :voided_by, :date_voided, :void_reason, :county_district, :address3, :address4, :address5, :address6, :uuid)")
     
     with source_engine.connect() as source_conn:
         result = source_conn.execution_options(yield_per=BATCH_SIZE).execute(text("SELECT * FROM person_address"))
@@ -210,7 +234,11 @@ def extract_person_attribute(drop_create=False):
     if drop_create:
         create_person_attribute_table(target_engine, drop_create=drop_create)
     info("Fetching data from source person_attribute table...")
-    insert_query = text("INSERT IGNORE INTO _person_attribute (person_attribute_id, person_id, value, person_attribute_type_id, creator, date_created, changed_by, date_changed, voided, voided_by, date_voided, void_reason, uuid) VALUES (:person_attribute_id, :person_id, :value, :person_attribute_type_id, :creator, :date_created, :changed_by, :date_changed, :voided, :voided_by, :date_voided, :void_reason, :uuid)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _person_attribute"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _person_attribute (person_attribute_id, person_id, value, person_attribute_type_id, creator, date_created, changed_by, date_changed, voided, voided_by, date_voided, void_reason, uuid) VALUES (:person_attribute_id, :person_id, :value, :person_attribute_type_id, :creator, :date_created, :changed_by, :date_changed, :voided, :voided_by, :date_voided, :void_reason, :uuid)")
     
     with source_engine.connect() as source_conn:
         result = source_conn.execution_options(yield_per=BATCH_SIZE).execute(text("SELECT * FROM person_attribute"))
@@ -245,7 +273,11 @@ def extract_person_attribute_type(drop_create=False):
     if drop_create:
         create_person_attribute_type_table(target_engine, drop_create=drop_create)
     info("Fetching data from source person_attribute_type table...")
-    insert_query = text("INSERT IGNORE INTO _person_attribute_type (person_attribute_type_id, name, description, format, foreign_key, searchable, creator, date_created, changed_by, date_changed, retired, retired_by, date_retired, retire_reason, edit_privilege, sort_weight, uuid) VALUES (:person_attribute_type_id, :name, :description, :format, :foreign_key, :searchable, :creator, :date_created, :changed_by, :date_changed, :retired, :retired_by, :date_retired, :retire_reason, :edit_privilege, :sort_weight, :uuid)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _person_attribute_type"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _person_attribute_type (person_attribute_type_id, name, description, format, foreign_key, searchable, creator, date_created, changed_by, date_changed, retired, retired_by, date_retired, retire_reason, edit_privilege, sort_weight, uuid) VALUES (:person_attribute_type_id, :name, :description, :format, :foreign_key, :searchable, :creator, :date_created, :changed_by, :date_changed, :retired, :retired_by, :date_retired, :retire_reason, :edit_privilege, :sort_weight, :uuid)")
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM person_attribute_type")).fetchall()
     if source_data:
@@ -266,7 +298,11 @@ def extract_person_name(drop_create=False):
     if drop_create:
         create_person_name_table(target_engine, drop_create=drop_create)
     info("Fetching data from source person_name table...")
-    insert_query = text("INSERT IGNORE INTO _person_name (person_name_id, preferred, person_id, prefix, given_name, middle_name, family_name_prefix, family_name, family_name2, family_name_suffix, degree, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid) VALUES (:person_name_id, :preferred, :person_id, :prefix, :given_name, :middle_name, :family_name_prefix, :family_name, :family_name2, :family_name_suffix, :degree, :creator, :date_created, :voided, :voided_by, :date_voided, :void_reason, :changed_by, :date_changed, :uuid)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _person_name"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _person_name (person_name_id, preferred, person_id, prefix, given_name, middle_name, family_name_prefix, family_name, family_name2, family_name_suffix, degree, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid) VALUES (:person_name_id, :preferred, :person_id, :prefix, :given_name, :middle_name, :family_name_prefix, :family_name, :family_name2, :family_name_suffix, :degree, :creator, :date_created, :voided, :voided_by, :date_voided, :void_reason, :changed_by, :date_changed, :uuid)")
     
     with source_engine.connect() as source_conn:
         result = source_conn.execution_options(yield_per=BATCH_SIZE).execute(text("SELECT * FROM person_name"))

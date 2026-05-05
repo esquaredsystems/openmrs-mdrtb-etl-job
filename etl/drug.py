@@ -14,11 +14,15 @@ def extract_drug(drop_create=False):
     if drop_create:
         create_drug_table(target_engine, drop_create=drop_create)
     info("Fetching data from source drug table...")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _drug"))
+        target_conn.commit()
+
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM drug")).fetchall()
     if source_data:
         info(f"Inserting {len(source_data)} records into target _drug table...")
-        insert_query = text("INSERT IGNORE INTO _drug (drug_id, concept_id, name, combination, dosage_form, dose_strength, maximum_daily_dose, minimum_daily_dose, route, units, creator, date_created, retired, retired_by, date_retired, retire_reason, uuid) VALUES (:drug_id, :concept_id, :name, :combination, :dosage_form, :dose_strength, :maximum_daily_dose, :minimum_daily_dose, :route, :units, :creator, :date_created, :retired, :retired_by, :date_retired, :retire_reason, :uuid)")
+        insert_query = text("INSERT INTO _drug (drug_id, concept_id, name, combination, dosage_form, dose_strength, maximum_daily_dose, minimum_daily_dose, route, units, creator, date_created, retired, retired_by, date_retired, retire_reason, uuid) VALUES (:drug_id, :concept_id, :name, :combination, :dosage_form, :dose_strength, :maximum_daily_dose, :minimum_daily_dose, :route, :units, :creator, :date_created, :retired, :retired_by, :date_retired, :retire_reason, :uuid)")
         with target_engine.connect() as target_conn:
             for row in source_data:
                 target_conn.execute(insert_query, {
@@ -35,7 +39,11 @@ def extract_drug_ingredient(drop_create=False):
     if drop_create:
         create_drug_ingredient_table(target_engine, drop_create=drop_create)
     info("Fetching data from source drug_ingredient table...")
-    insert_query = text("INSERT IGNORE INTO _drug_ingredient (concept_id, ingredient_id, uuid) VALUES (:concept_id, :ingredient_id, :uuid)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _drug_ingredient"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _drug_ingredient (concept_id, ingredient_id, uuid) VALUES (:concept_id, :ingredient_id, :uuid)")
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM drug_ingredient")).fetchall()
     if source_data:
@@ -56,7 +64,11 @@ def extract_drug_order(drop_create=False):
     if drop_create:
         create_drug_order_table(target_engine, drop_create=drop_create)
     info("Fetching data from source drug_order table...")
-    insert_query = text("INSERT IGNORE INTO _drug_order (order_id, drug_inventory_id, dose, equivalent_daily_dose, units, frequency, prn, complex, quantity) VALUES (:order_id, :drug_inventory_id, :dose, :equivalent_daily_dose, :units, :frequency, :prn, :complex, :quantity)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _drug_order"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _drug_order (order_id, drug_inventory_id, dose, equivalent_daily_dose, units, frequency, prn, complex, quantity) VALUES (:order_id, :drug_inventory_id, :dose, :equivalent_daily_dose, :units, :frequency, :prn, :complex, :quantity)")
     
     with source_engine.connect() as source_conn:
         # Using execution_options(yield_per=BATCH_SIZE) for batching

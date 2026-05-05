@@ -13,7 +13,11 @@ def extract_form(drop_create=False):
     if drop_create:
         create_form_table(target_engine, drop_create=drop_create)
     info("Fetching data from source form table...")
-    insert_query = text("INSERT IGNORE INTO _form (form_id, name, version, build, published, xslt, template, description, encounter_type, creator, date_created, changed_by, date_changed, retired, retired_by, date_retired, retired_reason, uuid) VALUES (:form_id, :name, :version, :build, :published, :xslt, :template, :description, :encounter_type, :creator, :date_created, :changed_by, :date_changed, :retired, :retired_by, :date_retired, :retired_reason, :uuid)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _form"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _form (form_id, name, version, build, published, xslt, template, description, encounter_type, creator, date_created, changed_by, date_changed, retired, retired_by, date_retired, retired_reason, uuid) VALUES (:form_id, :name, :version, :build, :published, :xslt, :template, :description, :encounter_type, :creator, :date_created, :changed_by, :date_changed, :retired, :retired_by, :date_retired, :retired_reason, :uuid)")
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM form")).fetchall()
     if source_data:
@@ -34,7 +38,11 @@ def extract_form_field(drop_create=False):
     if drop_create:
         create_form_field_table(target_engine, drop_create=drop_create)
     info("Fetching data from source form_field table...")
-    insert_query = text("INSERT IGNORE INTO _form_field (form_field_id, form_id, field_id, field_number, field_part, page_number, parent_form_field, min_occurs, max_occurs, required, changed_by, date_changed, creator, date_created, sort_weight, uuid) VALUES (:form_field_id, :form_id, :field_id, :field_number, :field_part, :page_number, :parent_form_field, :min_occurs, :max_occurs, :required, :changed_by, :date_changed, :creator, :date_created, :sort_weight, :uuid)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _form_field"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _form_field (form_field_id, form_id, field_id, field_number, field_part, page_number, parent_form_field, min_occurs, max_occurs, required, changed_by, date_changed, creator, date_created, sort_weight, uuid) VALUES (:form_field_id, :form_id, :field_id, :field_number, :field_part, :page_number, :parent_form_field, :min_occurs, :max_occurs, :required, :changed_by, :date_changed, :creator, :date_created, :sort_weight, :uuid)")
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM form_field")).fetchall()
     if source_data:
@@ -55,7 +63,11 @@ def extract_field(drop_create=False):
     if drop_create:
         create_field_table(target_engine, drop_create=drop_create)
     info("Fetching data from source field table...")
-    insert_query = text("INSERT IGNORE INTO _field (field_id, name, description, field_type, concept_id, table_name, attribute_name, default_value, select_multiple, creator, date_created, changed_by, date_changed, retired, retired_by, date_retired, retire_reason, uuid) VALUES (:field_id, :name, :description, :field_type, :concept_id, :table_name, :attribute_name, :default_value, :select_multiple, :creator, :date_created, :changed_by, :date_changed, :retired, :retired_by, :date_retired, :retire_reason, :uuid)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _field"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _field (field_id, name, description, field_type, concept_id, table_name, attribute_name, default_value, select_multiple, creator, date_created, changed_by, date_changed, retired, retired_by, date_retired, retire_reason, uuid) VALUES (:field_id, :name, :description, :field_type, :concept_id, :table_name, :attribute_name, :default_value, :select_multiple, :creator, :date_created, :changed_by, :date_changed, :retired, :retired_by, :date_retired, :retire_reason, :uuid)")
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM field")).fetchall()
     if source_data:
@@ -76,7 +88,11 @@ def extract_field_answer(drop_create=False):
     if drop_create:
         create_field_answer_table(target_engine, drop_create=drop_create)
     info("Fetching data from source field_answer table...")
-    insert_query = text("INSERT IGNORE INTO _field_answer (field_id, answer_id, creator, date_created, uuid) VALUES (:field_id, :answer_id, :creator, :date_created, :uuid)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _field_answer"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _field_answer (field_id, answer_id, creator, date_created, uuid) VALUES (:field_id, :answer_id, :creator, :date_created, :uuid)")
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM field_answer")).fetchall()
     if source_data:
@@ -97,7 +113,11 @@ def extract_field_type(drop_create=False):
     if drop_create:
         create_field_type_table(target_engine, drop_create=drop_create)
     info("Fetching data from source field_type table...")
-    insert_query = text("INSERT IGNORE INTO _field_type (field_type_id, name, description, is_set, creator, date_created, uuid) VALUES (:field_type_id, :name, :description, :is_set, :creator, :date_created, :uuid)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _field_type"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _field_type (field_type_id, name, description, is_set, creator, date_created, uuid) VALUES (:field_type_id, :name, :description, :is_set, :creator, :date_created, :uuid)")
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM field_type")).fetchall()
     if source_data:
@@ -118,7 +138,11 @@ def extract_htmlformentry_html_form(drop_create=False):
     if drop_create:
         create_htmlformentry_html_form(target_engine, drop_create=drop_create)
     info("Fetching data from source htmlformentry_html_form table...")
-    insert_query = text("INSERT IGNORE INTO _htmlformentry_html_form (id, form_id, name, xml_data, creator, date_created, changed_by, date_changed, retired, uuid, description, retired_by, date_retired, retire_reason) VALUES (:id, :form_id, :name, :xml_data, :creator, :date_created, :changed_by, :date_changed, :retired, :uuid, :description, :retired_by, :date_retired, :retire_reason)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _htmlformentry_html_form"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _htmlformentry_html_form (id, form_id, name, xml_data, creator, date_created, changed_by, date_changed, retired, uuid, description, retired_by, date_retired, retire_reason) VALUES (:id, :form_id, :name, :xml_data, :creator, :date_created, :changed_by, :date_changed, :retired, :uuid, :description, :retired_by, :date_retired, :retire_reason)")
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM htmlformentry_html_form")).fetchall()
     if source_data:

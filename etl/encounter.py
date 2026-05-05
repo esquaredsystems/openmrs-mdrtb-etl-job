@@ -14,7 +14,11 @@ def extract_encounter_type(drop_create=False):
     if drop_create:
         create_encounter_type_table(target_engine, drop_create=drop_create)
     info("Fetching data from source encounter_type table...")
-    insert_query = text("INSERT IGNORE INTO _encounter_type (encounter_type_id, name, description, creator, date_created, retired, retired_by, date_retired, retire_reason, uuid) VALUES (:encounter_type_id, :name, :description, :creator, :date_created, :retired, :retired_by, :date_retired, :retire_reason, :uuid)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _encounter_type"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _encounter_type (encounter_type_id, name, description, creator, date_created, retired, retired_by, date_retired, retire_reason, uuid) VALUES (:encounter_type_id, :name, :description, :creator, :date_created, :retired, :retired_by, :date_retired, :retire_reason, :uuid)")
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM encounter_type")).fetchall()
     if source_data:
@@ -35,7 +39,11 @@ def extract_encounter(drop_create=False):
     if drop_create:
         create_encounter_table(target_engine, drop_create=drop_create)
     info("Fetching data from source encounter table...")
-    insert_query = text("INSERT IGNORE INTO _encounter (encounter_id, encounter_type, patient_id, provider_id, location_id, form_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid) VALUES (:encounter_id, :encounter_type, :patient_id, :provider_id, :location_id, :form_id, :encounter_datetime, :creator, :date_created, :voided, :voided_by, :date_voided, :void_reason, :changed_by, :date_changed, :uuid)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _encounter"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _encounter (encounter_id, encounter_type, patient_id, provider_id, location_id, form_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid) VALUES (:encounter_id, :encounter_type, :patient_id, :provider_id, :location_id, :form_id, :encounter_datetime, :creator, :date_created, :voided, :voided_by, :date_voided, :void_reason, :changed_by, :date_changed, :uuid)")
     
     with source_engine.connect() as source_conn:
         # Using execution_options(yield_per=BATCH_SIZE) for batching

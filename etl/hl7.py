@@ -13,7 +13,11 @@ def extract_hl7_in_error(drop_create=False):
     if drop_create:
         create_hl7_in_error_table(target_engine, drop_create=drop_create)
     info("Fetching data from source hl7_in_error table...")
-    insert_query = text("INSERT IGNORE INTO _hl7_in_error (hl7_in_error_id, hl7_source, hl7_source_key, hl7_data, error, error_details, date_created, uuid) VALUES (:hl7_in_error_id, :hl7_source, :hl7_source_key, :hl7_data, :error, :error_details, :date_created, :uuid)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _hl7_in_error"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _hl7_in_error (hl7_in_error_id, hl7_source, hl7_source_key, hl7_data, error, error_details, date_created, uuid) VALUES (:hl7_in_error_id, :hl7_source, :hl7_source_key, :hl7_data, :error, :error_details, :date_created, :uuid)")
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM hl7_in_error")).fetchall()
     if source_data:
@@ -34,7 +38,11 @@ def extract_hl7_in_queue(drop_create=False):
     if drop_create:
         create_hl7_in_queue_table(target_engine, drop_create=drop_create)
     info("Fetching data from source hl7_in_queue table...")
-    insert_query = text("INSERT IGNORE INTO _hl7_in_queue (hl7_in_queue_id, hl7_source, hl7_source_key, hl7_data, message_state, date_processed, error_msg, date_created, uuid) VALUES (:hl7_in_queue_id, :hl7_source, :hl7_source_key, :hl7_data, :message_state, :date_processed, :error_msg, :date_created, :uuid)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _hl7_in_queue"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _hl7_in_queue (hl7_in_queue_id, hl7_source, hl7_source_key, hl7_data, message_state, date_processed, error_msg, date_created, uuid) VALUES (:hl7_in_queue_id, :hl7_source, :hl7_source_key, :hl7_data, :message_state, :date_processed, :error_msg, :date_created, :uuid)")
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM hl7_in_queue")).fetchall()
     if source_data:
@@ -55,7 +63,11 @@ def extract_hl7_source(drop_create=False):
     if drop_create:
         create_hl7_source_table(target_engine, drop_create=drop_create)
     info("Fetching data from source hl7_source table...")
-    insert_query = text("INSERT IGNORE INTO _hl7_source (hl7_source_id, name, description, creator, date_created, uuid) VALUES (:hl7_source_id, :name, :description, :creator, :date_created, :uuid)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _hl7_source"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _hl7_source (hl7_source_id, name, description, creator, date_created, uuid) VALUES (:hl7_source_id, :name, :description, :creator, :date_created, :uuid)")
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM hl7_source")).fetchall()
     if source_data:

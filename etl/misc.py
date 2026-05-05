@@ -13,7 +13,11 @@ def extract_global_property(drop_create=False):
     if drop_create:
         create_global_property_table(target_engine, drop_create=drop_create)
     info("Fetching data from source global_property table...")
-    insert_query = text("INSERT IGNORE INTO _global_property (property, property_value, description, uuid) VALUES (:property, :property_value, :description, :uuid)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _global_property"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _global_property (property, property_value, description, uuid) VALUES (:property, :property_value, :description, :uuid)")
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM global_property")).fetchall()
     if source_data:
@@ -34,7 +38,11 @@ def extract_note(drop_create=False):
     if drop_create:
         create_note_table(target_engine, drop_create=drop_create)
     info("Fetching data from source note table...")
-    insert_query = text("INSERT IGNORE INTO _note (note_id, note_type, patient_id, obs_id, encounter_id, text, priority, parent, creator, date_created, changed_by, date_changed, uuid) VALUES (:note_id, :note_type, :patient_id, :obs_id, :encounter_id, :text, :priority, :parent, :creator, :date_created, :changed_by, :date_changed, :uuid)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _note"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _note (note_id, note_type, patient_id, obs_id, encounter_id, text, priority, parent, creator, date_created, changed_by, date_changed, uuid) VALUES (:note_id, :note_type, :patient_id, :obs_id, :encounter_id, :text, :priority, :parent, :creator, :date_created, :changed_by, :date_changed, :uuid)")
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM note")).fetchall()
     if source_data:
@@ -55,7 +63,11 @@ def extract_notification_alert(drop_create=False):
     if drop_create:
         create_notification_alert_table(target_engine, drop_create=drop_create)
     info("Fetching data from source notification_alert table...")
-    insert_query = text("INSERT IGNORE INTO _notification_alert (alert_id, text, satisfied_by_any, alert_read, date_to_expire, creator, date_created, changed_by, date_changed, uuid) VALUES (:alert_id, :text, :satisfied_by_any, :alert_read, :date_to_expire, :creator, :date_created, :changed_by, :date_changed, :uuid)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _notification_alert"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _notification_alert (alert_id, text, satisfied_by_any, alert_read, date_to_expire, creator, date_created, changed_by, date_changed, uuid) VALUES (:alert_id, :text, :satisfied_by_any, :alert_read, :date_to_expire, :creator, :date_created, :changed_by, :date_changed, :uuid)")
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM notification_alert")).fetchall()
     if source_data:
@@ -76,7 +88,11 @@ def extract_notification_alert_recipient(drop_create=False):
     if drop_create:
         create_notification_alert_recipient_table(target_engine, drop_create=drop_create)
     info("Fetching data from source notification_alert_recipient table...")
-    insert_query = text("INSERT IGNORE INTO _notification_alert_recipient (alert_id, user_id, alert_read, date_changed, uuid) VALUES (:alert_id, :user_id, :alert_read, :date_changed, :uuid)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _notification_alert_recipient"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _notification_alert_recipient (alert_id, user_id, alert_read, date_changed, uuid) VALUES (:alert_id, :user_id, :alert_read, :date_changed, :uuid)")
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM notification_alert_recipient")).fetchall()
     if source_data:
@@ -97,7 +113,11 @@ def extract_relationship_type(drop_create=False):
     if drop_create:
         create_relationship_type_table(target_engine, drop_create=drop_create)
     info("Fetching data from source relationship_type table...")
-    insert_query = text("INSERT IGNORE INTO _relationship_type (relationship_type_id, a_is_to_b, b_is_to_a, preferred, weight, description, creator, date_created, uuid, retired, retired_by, date_retired, retire_reason) VALUES (:relationship_type_id, :a_is_to_b, :b_is_to_a, :preferred, :weight, :description, :creator, :date_created, :uuid, :retired, :retired_by, :date_retired, :retire_reason)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _relationship_type"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _relationship_type (relationship_type_id, a_is_to_b, b_is_to_a, preferred, weight, description, creator, date_created, uuid, retired, retired_by, date_retired, retire_reason) VALUES (:relationship_type_id, :a_is_to_b, :b_is_to_a, :preferred, :weight, :description, :creator, :date_created, :uuid, :retired, :retired_by, :date_retired, :retire_reason)")
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM relationship_type")).fetchall()
     if source_data:

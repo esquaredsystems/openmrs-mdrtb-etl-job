@@ -13,7 +13,11 @@ def extract_privilege(drop_create=False):
     if drop_create:
         create_privilege_table(target_engine, drop_create=drop_create)
     info("Fetching data from source privilege table...")
-    insert_query = text("INSERT IGNORE INTO _privilege (privilege, description, uuid) VALUES (:privilege, :description, :uuid)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _privilege"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _privilege (privilege, description, uuid) VALUES (:privilege, :description, :uuid)")
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM privilege")).fetchall()
     if source_data:
@@ -34,7 +38,11 @@ def extract_role(drop_create=False):
     if drop_create:
         create_role_table(target_engine, drop_create=drop_create)
     info("Fetching data from source role table...")
-    insert_query = text("INSERT IGNORE INTO _role (role, description, uuid) VALUES (:role, :description, :uuid)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _role"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _role (role, description, uuid) VALUES (:role, :description, :uuid)")
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM role")).fetchall()
     if source_data:
@@ -55,7 +63,11 @@ def extract_role_privilege(drop_create=False):
     if drop_create:
         create_role_privilege_table(target_engine, drop_create=drop_create)
     info("Fetching data from source role_privilege table...")
-    insert_query = text("INSERT IGNORE INTO _role_privilege (role, privilege) VALUES (:role, :privilege)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _role_privilege"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _role_privilege (role, privilege) VALUES (:role, :privilege)")
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM role_privilege")).fetchall()
     if source_data:
@@ -76,7 +88,11 @@ def extract_role_role(drop_create=False):
     if drop_create:
         create_role_role_table(target_engine, drop_create=drop_create)
     info("Fetching data from source role_role table...")
-    insert_query = text("INSERT IGNORE INTO _role_role (parent_role, child_role) VALUES (:parent_role, :child_role)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _role_role"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _role_role (parent_role, child_role) VALUES (:parent_role, :child_role)")
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM role_role")).fetchall()
     if source_data:
@@ -97,7 +113,11 @@ def extract_users(drop_create=False):
     if drop_create:
         create_users_table(target_engine, drop_create=drop_create)
     info("Fetching data from source users table...")
-    insert_query = text("INSERT IGNORE INTO _users (user_id, system_id, username, password, salt, secret_question, secret_answer, creator, date_created, changed_by, date_changed, person_id, retired, retired_by, date_retired, retire_reason, uuid) VALUES (:user_id, :system_id, :username, :password, :salt, :secret_question, :secret_answer, :creator, :date_created, :changed_by, :date_changed, :person_id, :retired, :retired_by, :date_retired, :retire_reason, :uuid)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _users"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _users (user_id, system_id, username, password, salt, secret_question, secret_answer, creator, date_created, changed_by, date_changed, person_id, retired, retired_by, date_retired, retire_reason, uuid) VALUES (:user_id, :system_id, :username, :password, :salt, :secret_question, :secret_answer, :creator, :date_created, :changed_by, :date_changed, :person_id, :retired, :retired_by, :date_retired, :retire_reason, :uuid)")
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM users")).fetchall()
     if source_data:
@@ -118,7 +138,11 @@ def extract_user_property(drop_create=False):
     if drop_create:
         create_user_property_table(target_engine, drop_create=drop_create)
     info("Fetching data from source user_property table...")
-    insert_query = text("INSERT IGNORE INTO _user_property (user_id, property, property_value) VALUES (:user_id, :property, :property_value)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _user_property"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _user_property (user_id, property, property_value) VALUES (:user_id, :property, :property_value)")
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM user_property")).fetchall()
     if source_data:
@@ -139,7 +163,11 @@ def extract_user_role(drop_create=False):
     if drop_create:
         create_user_role_table(target_engine, drop_create=drop_create)
     info("Fetching data from source user_role table...")
-    insert_query = text("INSERT IGNORE INTO _user_role (user_id, role) VALUES (:user_id, :role)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _user_role"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _user_role (user_id, role) VALUES (:user_id, :role)")
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM user_role")).fetchall()
     if source_data:

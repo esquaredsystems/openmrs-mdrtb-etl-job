@@ -15,13 +15,17 @@ def extract_address_hierarchy_level(drop_create=False):
         create_address_hierarchy_level_table(target_engine, drop_create=drop_create)
 
     info("Fetching data from source address_hierarchy_level table...")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _address_hierarchy_level"))
+        target_conn.commit()
+
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM address_hierarchy_level")).fetchall()
 
     if source_data:
         info(f"Inserting {len(source_data)} records into target _address_hierarchy_level table...")
         insert_query = text("""
-        INSERT IGNORE INTO _address_hierarchy_level (address_hierarchy_level_id, name, parent_level_id, address_field, uuid, required)
+        INSERT INTO _address_hierarchy_level (address_hierarchy_level_id, name, parent_level_id, address_field, uuid, required)
         VALUES (:address_hierarchy_level_id, :name, :parent_level_id, :address_field, :uuid, :required)
         """)
 
@@ -43,13 +47,17 @@ def extract_address_hierarchy_entry(drop_create=False):
         create_address_hierarchy_entry_table(target_engine, drop_create=drop_create)
 
     info("Fetching data from source address_hierarchy_entry table...")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _address_hierarchy_entry"))
+        target_conn.commit()
+
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM address_hierarchy_entry")).fetchall()
 
     if source_data:
         info(f"Inserting {len(source_data)} records into target _address_hierarchy_entry table...")
         insert_query = text("""
-        INSERT IGNORE INTO _address_hierarchy_entry (address_hierarchy_entry_id, name, level_id, parent_id, user_generated_id, latitude, longitude, elevation, uuid)
+        INSERT INTO _address_hierarchy_entry (address_hierarchy_entry_id, name, level_id, parent_id, user_generated_id, latitude, longitude, elevation, uuid)
         VALUES (:address_hierarchy_entry_id, :name, :level_id, :parent_id, :user_generated_id, :latitude, :longitude, :elevation, :uuid)
         """)
         with target_engine.connect() as target_conn:

@@ -36,9 +36,9 @@ def run_extract_job(hard_reset=False):
     extract_user_group(hard_reset)
     extract_report_group(hard_reset)
     extract_misc_group(hard_reset)
-    extract_patient_group(hard_reset)
-    extract_encounter_group(hard_reset)
-    extract_obs_group(hard_reset)
+    # extract_patient_group(hard_reset)
+    # extract_encounter_group(hard_reset)
+    # extract_obs_group(hard_reset)
     info(f"Extraction job completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
 

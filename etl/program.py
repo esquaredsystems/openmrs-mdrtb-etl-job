@@ -13,7 +13,11 @@ def extract_program(drop_create=False):
     if drop_create:
         create_program_table(target_engine, drop_create=drop_create)
     info("Fetching data from source program table...")
-    insert_query = text("INSERT IGNORE INTO _program (program_id, concept_id, creator, date_created, changed_by, date_changed, retired, name, description, uuid) VALUES (:program_id, :concept_id, :creator, :date_created, :changed_by, :date_changed, :retired, :name, :description, :uuid)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _program"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _program (program_id, concept_id, creator, date_created, changed_by, date_changed, retired, name, description, uuid) VALUES (:program_id, :concept_id, :creator, :date_created, :changed_by, :date_changed, :retired, :name, :description, :uuid)")
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM program")).fetchall()
     if source_data:
@@ -34,7 +38,11 @@ def extract_program_workflow(drop_create=False):
     if drop_create:
         create_program_workflow_table(target_engine, drop_create=drop_create)
     info("Fetching data from source program_workflow table...")
-    insert_query = text("INSERT IGNORE INTO _program_workflow (program_workflow_id, program_id, concept_id, creator, date_created, retired, changed_by, date_changed, uuid) VALUES (:program_workflow_id, :program_id, :concept_id, :creator, :date_created, :retired, :changed_by, :date_changed, :uuid)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _program_workflow"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _program_workflow (program_workflow_id, program_id, concept_id, creator, date_created, retired, changed_by, date_changed, uuid) VALUES (:program_workflow_id, :program_id, :concept_id, :creator, :date_created, :retired, :changed_by, :date_changed, :uuid)")
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM program_workflow")).fetchall()
     if source_data:
@@ -55,7 +63,11 @@ def extract_program_workflow_state(drop_create=False):
     if drop_create:
         create_program_workflow_state_table(target_engine, drop_create=drop_create)
     info("Fetching data from source program_workflow_state table...")
-    insert_query = text("INSERT IGNORE INTO _program_workflow_state (program_workflow_state_id, program_workflow_id, concept_id, initial, terminal, creator, date_created, retired, changed_by, date_changed, uuid) VALUES (:program_workflow_state_id, :program_workflow_id, :concept_id, :initial, :terminal, :creator, :date_created, :retired, :changed_by, :date_changed, :uuid)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _program_workflow_state"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _program_workflow_state (program_workflow_state_id, program_workflow_id, concept_id, initial, terminal, creator, date_created, retired, changed_by, date_changed, uuid) VALUES (:program_workflow_state_id, :program_workflow_id, :concept_id, :initial, :terminal, :creator, :date_created, :retired, :changed_by, :date_changed, :uuid)")
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM program_workflow_state")).fetchall()
     if source_data:

@@ -14,7 +14,11 @@ def extract_report_object(drop_create=False):
     if drop_create:
         create_report_object_table(target_engine, drop_create=drop_create)
     info("Fetching data from source report_object table...")
-    insert_query = text("INSERT IGNORE INTO _report_object (report_object_id, name, description, report_object_type, report_object_sub_type, xml_data, creator, date_created, changed_by, date_changed, voided, voided_by, date_voided, void_reason, uuid) VALUES (:report_object_id, :name, :description, :report_object_type, :report_object_sub_type, :xml_data, :creator, :date_created, :changed_by, :date_changed, :voided, :voided_by, :date_voided, :void_reason, :uuid)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _report_object"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _report_object (report_object_id, name, description, report_object_type, report_object_sub_type, xml_data, creator, date_created, changed_by, date_changed, voided, voided_by, date_voided, void_reason, uuid) VALUES (:report_object_id, :name, :description, :report_object_type, :report_object_sub_type, :xml_data, :creator, :date_created, :changed_by, :date_changed, :voided, :voided_by, :date_voided, :void_reason, :uuid)")
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM report_object")).fetchall()
     if source_data:
@@ -35,7 +39,11 @@ def extract_report_schema_xml(drop_create=False):
     if drop_create:
         create_report_schema_xml_table(target_engine, drop_create=drop_create)
     info("Fetching data from source report_schema_xml table...")
-    insert_query = text("INSERT IGNORE INTO _report_schema_xml (report_schema_id, name, description, xml_data, uuid) VALUES (:report_schema_id, :name, :description, :xml_data, :uuid)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _report_schema_xml"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _report_schema_xml (report_schema_id, name, description, xml_data, uuid) VALUES (:report_schema_id, :name, :description, :xml_data, :uuid)")
     with source_engine.connect() as source_conn:
         source_data = source_conn.execute(text("SELECT * FROM report_schema_xml")).fetchall()
     if source_data:
@@ -56,7 +64,11 @@ def extract_serialized_object(drop_create=False):
     if drop_create:
         create_serialized_object_table(target_engine, drop_create=drop_create)
     info("Fetching data from source serialized_object table...")
-    insert_query = text("INSERT IGNORE INTO _serialized_object (serialized_object_id, name, description, type, subtype, serialization_class, serialized_data, date_created, creator, date_changed, changed_by, retired, date_retired, retired_by, retire_reason, uuid) VALUES (:serialized_object_id, :name, :description, :type, :subtype, :serialization_class, :serialized_data, :date_created, :creator, :date_changed, :changed_by, :retired, :date_retired, :retired_by, :retire_reason, :uuid)")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _serialized_object"))
+        target_conn.commit()
+
+    insert_query = text("INSERT INTO _serialized_object (serialized_object_id, name, description, type, subtype, serialization_class, serialized_data, date_created, creator, date_changed, changed_by, retired, date_retired, retired_by, retire_reason, uuid) VALUES (:serialized_object_id, :name, :description, :type, :subtype, :serialization_class, :serialized_data, :date_created, :creator, :date_changed, :changed_by, :retired, :date_retired, :retired_by, :retire_reason, :uuid)")
     
     with source_engine.connect() as source_conn:
         result = source_conn.execution_options(yield_per=BATCH_SIZE).execute(text("SELECT * FROM serialized_object"))
