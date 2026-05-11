@@ -331,7 +331,7 @@ def create_location_table(engine, drop_create=False):
     with engine.connect() as conn:
         if drop_create:
             conn.execute(text("DROP TABLE IF EXISTS _location"))
-        create_query = "CREATE TABLE _location (location_id int(10) NOT NULL, name varchar(255) NOT NULL, description varchar(255), address1 varchar(255), address2 varchar(255), city_village varchar(255), state_province varchar(255), postal_code varchar(50), country varchar(50), latitude varchar(50), longitude varchar(50), creator int(10) NOT NULL, date_created datetime NOT NULL, county_district varchar(255), address3 varchar(255), address4 varchar(255), address5 varchar(255), address6 varchar(255), retired bit(1) NOT NULL, retired_by int(10), date_retired datetime, retire_reason varchar(255), parent_location int(10), uuid char(38), PRIMARY KEY (location_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        create_query = "CREATE TABLE _location (location_id int(10) NOT NULL, name varchar(255) NOT NULL, level varchar(50), parent_location int(10), description varchar(255), state_province varchar(255), county_district varchar(255), date_created datetime NOT NULL, retired bit(1) NOT NULL, retired_by int(10), date_retired datetime, retire_reason varchar(255), uuid char(38), PRIMARY KEY (location_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         conn.execute(text(create_query))
         conn.commit()
 

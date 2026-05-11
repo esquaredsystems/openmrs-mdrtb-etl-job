@@ -165,3 +165,29 @@ def load_drug_group():
     load_drug_ingredient()
     load_drug_order()
 
+
+##### Transform functions #####
+def transform_drug_group():
+    """
+    Updates the dose_limit_units column in the drug table based on the strength suffix.
+    """
+    target_engine = get_target_engine()
+    with target_engine.connect() as conn:
+        conn.execute(text("""
+            UPDATE drug SET dose_limit_units = CASE
+                WHEN strength LIKE '%mg' THEN (
+                    SELECT concept_id FROM concept_name WHERE name = 'MILLIGRAM(S)' AND locale = 'en' LIMIT 1
+                )
+                WHEN strength LIKE '%ml' THEN (
+                    SELECT concept_id FROM concept_name WHERE name = 'MILLILITRE(S)' AND locale = 'en' LIMIT 1
+                )
+                WHEN strength LIKE '%tab' OR strength LIKE '%tab(s)' THEN (
+                    SELECT concept_id FROM concept_name WHERE name = 'FILM COATED TABLET' AND locale = 'en' LIMIT 1
+                )
+                ELSE dose_limit_units
+            END
+            WHERE (dose_limit_units IS NULL OR dose_limit_units = 0)
+            AND (strength LIKE '%mg' OR strength LIKE '%ml' OR strength LIKE '%tab' OR strength LIKE '%tab(s)')
+        """))
+        conn.commit()
+    info("Drug dose_limit_units updated based on strength.")

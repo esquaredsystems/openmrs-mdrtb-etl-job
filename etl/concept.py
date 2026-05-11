@@ -397,9 +397,11 @@ def transform_concept_reference_term():
     with target_engine.connect() as target_conn:
         source_data = target_conn.execute(text(select_sql)).fetchall()
     if source_data:
+        info("(Re)creating _concept_reference_term table...")
+        create_concept_reference_term_table(target_engine, drop_create=True)
         info("Transforming data to fill _concept_map table...")
         insert_sql= text("""
-            INSERT IGNORE INTO _concept_reference_term (concept_reference_term_id, concept_source_id, name, code, version, description, creator, date_created, date_changed, changed_by, retired, retired_by, date_retired, retire_reason, uuid) 
+            INSERT INTO _concept_reference_term (concept_reference_term_id, concept_source_id, name, code, version, description, creator, date_created, date_changed, changed_by, retired, retired_by, date_retired, retire_reason, uuid) 
             VALUES (:concept_reference_term_id, :concept_source_id, :name, :code, :version, :description, :creator, :date_created, :date_changed, :changed_by, :retired, :retired_by, :date_retired, :retire_reason, :uuid)
         """)
         with target_engine.connect() as target_conn:
@@ -528,13 +530,23 @@ def load_concept_complex():
 def load_concept_name():
     start_time = time.time()
     target_engine = get_target_engine()
-    select_insert_sql = """
-    INSERT IGNORE INTO concept_name (concept_name_id, concept_id, name, locale, locale_preferred, creator, date_created, concept_name_type, voided, voided_by, date_voided, void_reason, uuid)
-    SELECT concept_name_id, concept_id, name, locale, locale_preferred, creator, date_created, concept_name_type, voided, voided_by, date_voided, void_reason, uuid FROM _concept_name
-    """
     with target_engine.connect() as conn:
         info("Loading data for concept_name table...")
-        conn.execute(text(select_insert_sql))
+        # Disable foreign key checks
+        conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
+        conn.commit()
+        
+        # Run UPSERT
+        upsert_sql = """
+        INSERT INTO concept_name (concept_name_id, concept_id, name, locale, locale_preferred, creator, date_created, concept_name_type, voided, voided_by, date_voided, void_reason, uuid)
+        SELECT concept_name_id, concept_id, name, locale, locale_preferred, creator, date_created, concept_name_type, voided, voided_by, date_voided, void_reason, uuid FROM _concept_name
+        ON DUPLICATE KEY UPDATE concept_id = VALUES(concept_id), name = VALUES(name), locale = VALUES(locale), locale_preferred = VALUES(locale_preferred), creator = VALUES(creator), date_created = VALUES(date_created), concept_name_type = VALUES(concept_name_type), voided = VALUES(voided), voided_by = VALUES(voided_by), date_voided = VALUES(date_voided), void_reason = VALUES(void_reason)
+        """
+        conn.execute(text(upsert_sql))
+        conn.commit()
+        
+        # Enable foreign key checks
+        conn.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
         conn.commit()
     info(f"Load concept_name completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
