@@ -1,6 +1,5 @@
 import time
-
-from sqlalchemy import text
+from datetime import date
 
 from config.config import BATCH_SIZE
 from config.database import get_source_engine, get_target_engine
@@ -59,9 +58,83 @@ def extract_obs(drop_create=False, resume=False):
 def extract_obs_group(drop_create):
     start_time = time.time()
     extract_obs(drop_create=drop_create, resume=True)
-    info(f"Obs table created successfully (Time: {time.time() - start_time:.2f} seconds)")
+    info("Obs table created successfully")
+    info(f"Extraction completed in {time.time() - start_time:.2f} seconds")
 
 ##### Loading functions #####
-def load_obs_group():
-    pass
+def load_obs(resume=False):
+    start_time = time.time()
+    target_engine = get_target_engine()
+    select_insert_sql = """
+    INSERT IGNORE INTO obs (
+    obs_id, person_id, concept_id, encounter_id, order_id, obs_datetime, location_id,
+    obs_group_id, accession_number, value_group_id, value_coded,
+    value_coded_name_id, value_drug, value_datetime, value_numeric, value_modifier,
+    value_text, value_complex, comments, creator, date_created, voided, voided_by,
+    date_voided, void_reason, uuid
+    )
+    SELECT
+    obs_id, person_id, concept_id, encounter_id, order_id, obs_datetime, location_id,
+    obs_group_id, accession_number, value_group_id,
+    CASE
+        WHEN value_boolean = 1 THEN 1
+        WHEN value_boolean = 0 THEN 0
+        ELSE value_coded
+    END,
+    value_coded_name_id, value_drug, value_datetime, value_numeric, 
+    value_modifier, value_text, value_complex, comments, creator, date_created, 
+    voided, voided_by, date_voided, void_reason, uuid
+    FROM _obs
+    WHERE date_created <= CURRENT_DATE()
+      AND date_created >= :year_start
+      AND date_created < :year_end
+    """
 
+    with target_engine.connect() as conn:
+        info("Loading data for obs table...")
+        date_bounds_sql = text("SELECT DATE(MIN(date_created)) AS first_date, CURRENT_DATE() AS current_date FROM _obs WHERE date_created <= CURRENT_DATE()")
+        date_bounds = conn.execute(date_bounds_sql).fetchone()
+        first_date = date_bounds[0] if date_bounds and date_bounds[0] is not None else None
+        current_date = date_bounds[1] if date_bounds and date_bounds[1] is not None else date.today()
+
+        if first_date is None:
+            warning("No data found in staging _obs table to load.")
+            return
+
+        start_date = first_date
+        if resume:
+            fetch_latest_sql = text("SELECT DATE(COALESCE(MAX(date_created), '1900-01-01')) AS latest FROM obs WHERE date_created <= CURRENT_DATE()")
+            last_entry = conn.execute(fetch_latest_sql).fetchone()
+            last_date = last_entry[0] if last_entry and last_entry[0] is not None else "1900-01-01"
+            info(f"Resume enabled. Using latest target obs date_created: {last_date}")
+
+            if isinstance(last_date, str):
+                last_date = date.fromisoformat(last_date)
+            start_date = max(first_date, last_date)
+
+        start_year = start_date.year
+        current_year = current_date.year
+        info(f"Loading obs year-by-year from {start_year} to {current_year}")
+
+        for year in range(start_year, current_year + 1):
+            year_start = date(year, 1, 1)
+            if year == start_year and start_date > year_start:
+                year_start = start_date
+
+            year_end = date(year + 1, 1, 1) if year < current_year else date(current_year + 1, 1, 1)
+            params = {
+                "year_start": year_start,
+                "year_end": year_end,
+            }
+
+            info(f"Loading obs records for year {year} (from {year_start} to {year_end})...")
+            conn.execute(text(select_insert_sql), params)
+            conn.commit()
+
+    info(f"Load obs completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
+
+
+def load_obs_group():
+    start_time = time.time()
+    load_obs(resume=True)
+    info(f"Load obs group completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")

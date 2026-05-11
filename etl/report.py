@@ -104,9 +104,50 @@ def extract_report_group(drop_create):
     extract_report_schema_xml(drop_create=drop_create)
     info("Report schema XML table created successfully")
     extract_serialized_object(drop_create=drop_create)
-    info(f"Serialized object table created successfully (Time: {time.time() - start_time:.2f} seconds)")
+    info("Serialized object table created successfully")
+    info(f"Extraction completed in {time.time() - start_time:.2f} seconds")
 
 ##### Loading functions #####
-def load_report_group():
-    pass
+def load_report_object():
+    start_time = time.time()
+    target_engine = get_target_engine()
+    select_insert_sql = """
+    INSERT IGNORE INTO report_object (report_object_id, name, description, report_object_type, report_object_sub_type, xml_data, creator, date_created, changed_by, date_changed, voided, voided_by, date_voided, void_reason, uuid)
+    SELECT report_object_id, name, description, report_object_type, report_object_sub_type, xml_data, creator, date_created, changed_by, date_changed, voided, voided_by, date_voided, void_reason, uuid FROM _report_object
+    """
+    with target_engine.connect() as conn:
+        info("Loading data for report_object table...")
+        conn.execute(text(select_insert_sql))
+        conn.commit()
+    info(f"Load report_object completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
+def load_report_schema_xml():
+    start_time = time.time()
+    target_engine = get_target_engine()
+    select_insert_sql = """
+    INSERT IGNORE INTO report_schema_xml (report_schema_id, name, description, xml_data, uuid)
+    SELECT report_schema_id, name, description, xml_data, uuid FROM _report_schema_xml
+    """
+    with target_engine.connect() as conn:
+        info("Loading data for report_schema_xml table...")
+        conn.execute(text(select_insert_sql))
+        conn.commit()
+    info(f"Load report_schema_xml completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
+
+def load_serialized_object():
+    start_time = time.time()
+    target_engine = get_target_engine()
+    select_insert_sql = """
+    INSERT IGNORE INTO serialized_object (serialized_object_id, name, description, type, subtype, serialization_class, serialized_data, date_created, creator, date_changed, changed_by, retired, date_retired, retired_by, retire_reason, uuid)
+    SELECT serialized_object_id, name, description, type, subtype, serialization_class, serialized_data, date_created, creator, date_changed, changed_by, retired, date_retired, retired_by, retire_reason, uuid FROM _serialized_object
+    """
+    with target_engine.connect() as conn:
+        info("Loading data for serialized_object table...")
+        conn.execute(text(select_insert_sql))
+        conn.commit()
+    info(f"Load serialized_object completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
+
+def load_report_group():
+    load_report_object()
+    load_report_schema_xml()
+    load_serialized_object()

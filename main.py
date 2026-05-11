@@ -38,7 +38,7 @@ def run_extract_job(hard_reset=False):
     extract_misc_group(hard_reset)
     extract_patient_group(hard_reset)
     extract_encounter_group(hard_reset)
-    # extract_obs_group(hard_reset)
+    extract_obs_group(hard_reset)
     info(f"Extraction job completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
 
@@ -53,21 +53,21 @@ def run_transform_job():
 
 def run_load_job():
     start_time = time.time()
-    # load_user_group()
-    # load_address_hierarchy_group()
-    # load_cohort_group()
+    load_user_group()
+    load_address_hierarchy_group()
+    load_cohort_group()
     load_concept_group()
-    # load_drug_group()
-    # load_form_group()
-    # load_hl7_group()
-    # load_location_group()
+    load_drug_group()
+    load_form_group()
+    load_hl7_group()
+    load_location_group()
     load_program_group()
-    # load_report_group()
-    # load_misc_group()
-    # load_patient_group()
-    # load_orders_group()
-    # load_encounter_group()
-    # load_obs_group()
+    load_report_group()
+    load_misc_group()
+    load_patient_group()
+    load_encounter_group()
+    load_obs_group()
+    load_orders_group()
     info(f"Load job completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
 
@@ -103,6 +103,8 @@ if __name__ == "__main__":
         result = conn.execute(text("SELECT 1"))
         assert result.scalar() == 1, "Connection to target database failed"
         info("Target connection successful")
+
+    load_obs_group()
 
     if args.extract:
         run_extract_job(hard_reset=args.hard_reset)

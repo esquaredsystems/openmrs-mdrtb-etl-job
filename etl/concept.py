@@ -379,7 +379,8 @@ def extract_concept_group(drop_create):
     extract_concept_set(drop_create=drop_create)
     info("Concept set table created successfully")
     extract_concept_word(drop_create=drop_create)
-    info(f"Concept word table created successfully (Time: {time.time() - start_time:.2f} seconds)")
+    info("Concept word table created successfully")
+    info(f"Extraction completed in {time.time() - start_time:.2f} seconds")
 
 ##### Transformation functions #####
 def transform_concept_reference_term():

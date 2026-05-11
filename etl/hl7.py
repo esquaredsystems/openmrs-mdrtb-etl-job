@@ -89,7 +89,8 @@ def extract_hl7_group(drop_create):
     extract_hl7_in_queue(drop_create=drop_create)
     info("HL7 in queue table created successfully")
     extract_hl7_source(drop_create=drop_create)
-    info(f"HL7 source table created successfully (Time: {time.time() - start_time:.2f} seconds)")
+    info("HL7 source table created successfully")
+    info(f"Extraction completed in {time.time() - start_time:.2f} seconds")
 
 ##### Loading functions #####
 def load_hl7_source():

@@ -70,7 +70,8 @@ def extract_cohort_group(drop_create):
     extract_cohort(drop_create=drop_create)
     info("Cohort table created successfully")
     extract_cohort_member(drop_create=drop_create)
-    info(f"Cohort member table created successfully (Time: {time.time() - start_time:.2f} seconds)")
+    info("Cohort member table created successfully")
+    info(f"Extraction completed in {time.time() - start_time:.2f} seconds")
 
 ##### Loading functions #####
 def load_cohort():

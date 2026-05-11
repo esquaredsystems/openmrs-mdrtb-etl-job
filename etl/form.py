@@ -170,7 +170,8 @@ def extract_form_group(drop_create):
     extract_field_type(drop_create=drop_create)
     info("Field type table created successfully")
     extract_htmlformentry_html_form(drop_create=drop_create)
-    info(f"HTML Form Entry table created successfully (Time: {time.time() - start_time:.2f} seconds)")
+    info("HTML Form Entry table created successfully")
+    info(f"Extraction completed in {time.time() - start_time:.2f} seconds")
 
 ##### Loading functions #####
 def load_field():

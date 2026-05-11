@@ -48,7 +48,8 @@ def extract_location(drop_create=False):
 def extract_location_group(drop_create):
     start_time = time.time()
     extract_location(drop_create=drop_create)
-    info(f"Location table created successfully (Time: {time.time() - start_time:.2f} seconds)")
+    info("Location table created successfully")
+    info(f"Extraction completed in {time.time() - start_time:.2f} seconds")
 
 
 ##### Load functions #####

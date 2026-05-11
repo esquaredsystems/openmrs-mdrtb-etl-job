@@ -104,7 +104,8 @@ def extract_drug_group(drop_create):
     extract_drug_ingredient(drop_create=drop_create)
     info("Drug ingredient table created successfully")
     extract_drug_order(drop_create=drop_create)
-    info(f"Drug order table created successfully (Time: {time.time() - start_time:.2f} seconds)")
+    info("Drug order table created successfully")
+    info(f"Extraction completed in {time.time() - start_time:.2f} seconds")
 
 ##### Loading functions #####
 def load_drug():

@@ -350,9 +350,160 @@ def extract_patient_group(drop_create):
     extract_person_attribute_type(drop_create=drop_create)
     info("Person attribute type table created successfully")
     extract_person_name(drop_create=drop_create)
-    info(f"Person name table created successfully (Time: {time.time() - start_time:.2f} seconds)")
+    info("Person name table created successfully")
+    info(f"Extraction completed in {time.time() - start_time:.2f} seconds")
 
 ##### Loading functions #####
-def load_patient_group():
-    pass
+def load_person():
+    start_time = time.time()
+    target_engine = get_target_engine()
+    select_insert_sql = """
+    INSERT IGNORE INTO person (person_id, gender, birthdate, birthdate_estimated, dead, death_date, cause_of_death, creator, date_created, changed_by, date_changed, voided, voided_by, date_voided, void_reason, uuid)
+    SELECT person_id, gender, birthdate, birthdate_estimated, dead, death_date, cause_of_death, creator, date_created, changed_by, date_changed, voided, voided_by, date_voided, void_reason, uuid FROM _person
+    """
+    with target_engine.connect() as conn:
+        info("Loading data for person table...")
+        conn.execute(text(select_insert_sql))
+        conn.commit()
+    info(f"Load person completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
+
+def load_person_name():
+    start_time = time.time()
+    target_engine = get_target_engine()
+    select_insert_sql = """
+    INSERT IGNORE INTO person_name (person_name_id, preferred, person_id, prefix, given_name, middle_name, family_name_prefix, family_name, family_name2, family_name_suffix, degree, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid)
+    SELECT person_name_id, preferred, person_id, prefix, given_name, middle_name, family_name_prefix, family_name, family_name2, family_name_suffix, degree, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid FROM _person_name
+    """
+    with target_engine.connect() as conn:
+        info("Loading data for person_name table...")
+        conn.execute(text(select_insert_sql))
+        conn.commit()
+    info(f"Load person_name completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
+
+
+def load_person_address():
+    start_time = time.time()
+    target_engine = get_target_engine()
+    select_insert_sql = """
+    INSERT IGNORE INTO person_address (person_address_id, person_id, preferred, address1, address2, city_village, state_province, postal_code, country, latitude, longitude, start_date, end_date, creator, date_created, voided, voided_by, date_voided, void_reason, county_district, address3, address4, address5, address6, date_changed, changed_by, uuid)
+    SELECT person_address_id, person_id, preferred, address1, address2, city_village, state_province, postal_code, country, latitude, longitude, start_date, end_date, creator, date_created, voided, voided_by, date_voided, void_reason, county_district, address3, address4, address5, address6, date_changed, changed_by, uuid FROM _person_address
+    """
+    with target_engine.connect() as conn:
+        info("Loading data for person_address table...")
+        conn.execute(text(select_insert_sql))
+        conn.commit()
+    info(f"Load person_address completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
+
+
+def load_person_attribute_type():
+    start_time = time.time()
+    target_engine = get_target_engine()
+    with target_engine.connect() as conn:
+        info("Loading data for person_attribute_type table...")
+        conn.execute(text("""
+        INSERT IGNORE INTO person_attribute_type (person_attribute_type_id, name, description, format, foreign_key, searchable, creator, date_created, changed_by, date_changed, retired, retired_by, date_retired, retire_reason, edit_privilege, sort_weight, uuid)
+        VALUES (9, 'волонтер (volunteer)', '', 'java.lang.String', NULL, 0, 1, '2011-11-08 11:31:01', 1, '2012-11-28 16:32:26', 1, 1, '2012-11-28 16:27:52', 'Not needed', NULL, 7.0, '8bd42c8c-52a9-4d6b-aede-e277706f9bec')
+        """))
+        conn.execute(text("""
+        INSERT IGNORE INTO person_attribute_type (person_attribute_type_id, name, description, format, foreign_key, searchable, creator, date_created, changed_by, date_changed, retired, retired_by, date_retired, retire_reason, edit_privilege, sort_weight, uuid)
+        SELECT person_attribute_type_id, name, description, format, foreign_key, searchable, creator, date_created, changed_by, date_changed, retired, retired_by, date_retired, retire_reason, edit_privilege, sort_weight, uuid FROM _person_attribute_type
+        """))
+        conn.commit()
+    info(f"Load person_attribute_type completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
+
+
+def load_person_attribute():
+    start_time = time.time()
+    target_engine = get_target_engine()
+    select_insert_sql = """
+    INSERT IGNORE INTO person_attribute (person_attribute_id, person_id, value, person_attribute_type_id, creator, date_created, changed_by, date_changed, voided, voided_by, date_voided, void_reason, uuid)
+    SELECT person_attribute_id, person_id, value, person_attribute_type_id, creator, date_created, changed_by, date_changed, voided, voided_by, date_voided, void_reason, uuid FROM _person_attribute
+    """
+    with target_engine.connect() as conn:
+        info("Loading data for person_attribute table...")
+        conn.execute(text(select_insert_sql))
+        conn.commit()
+    info(f"Load person_attribute completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
+
+
+def load_patient():
+    start_time = time.time()
+    target_engine = get_target_engine()
+    with target_engine.connect() as conn:
+        info("Loading data for patient table...")
+        conn.execute(text("SET FOREIGN_KEY_CHECKS=0"))
+        conn.execute(text("TRUNCATE TABLE patient"))
+        conn.execute(text("""
+        INSERT INTO patient (patient_id, creator, date_created, changed_by, date_changed, voided, voided_by, date_voided, void_reason)
+        SELECT patient_id, creator, date_created, changed_by, date_changed, voided, voided_by, date_voided, void_reason FROM _patient
+        """))
+        conn.execute(text("SET FOREIGN_KEY_CHECKS=1"))
+        conn.commit()
+    info(f"Load patient completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
+
+
+def load_patient_identifier_type():
+    start_time = time.time()
+    target_engine = get_target_engine()
+    with target_engine.connect() as conn:
+        info("Loading data for patient_identifier_type table...")
+        conn.execute(text("SET FOREIGN_KEY_CHECKS=0"))
+        conn.execute(text("TRUNCATE TABLE patient_identifier_type"))
+        conn.execute(text("""
+        INSERT INTO patient_identifier_type (patient_identifier_type_id, name, description, format, check_digit, creator, date_created, required, format_description, validator, location_behavior, retired, uuid)
+        VALUES (1, 'OpenMRS Identification Number', 'Unique number used in OpenMRS', '', 1, 1, '2005-09-22 00:00:00', 0, NULL, 'org.openmrs.patient.impl.LuhnIdentifierValidator', NULL, 0, '8d793bee-c2cc-11de-8d13-0010c6dffd0f')
+        """))
+        conn.execute(text("""
+        INSERT IGNORE INTO patient_identifier_type (patient_identifier_type_id, name, description, format, check_digit, creator, date_created, required, format_description, validator, location_behavior, retired, retired_by, date_retired, retire_reason, uuid)
+        SELECT patient_identifier_type_id, name, description, format, check_digit, creator, date_created, required, format_description, validator, location_behavior, retired, retired_by, date_retired, retire_reason, uuid FROM _patient_identifier_type
+        """))
+        conn.execute(text("SET FOREIGN_KEY_CHECKS=1"))
+        conn.commit()
+    info(f"Load patient_identifier_type completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
+
+
+def load_patient_identifier():
+    start_time = time.time()
+    target_engine = get_target_engine()
+    with target_engine.connect() as conn:
+        info("Loading data for patient_identifier table...")
+        conn.execute(text("SET FOREIGN_KEY_CHECKS=0"))
+        conn.execute(text("TRUNCATE TABLE patient_identifier"))
+        conn.execute(text("""
+        INSERT INTO patient_identifier (patient_identifier_id, patient_id, identifier, identifier_type, preferred, location_id, creator, date_created, date_changed, changed_by, voided, voided_by, date_voided, void_reason, uuid)
+        SELECT patient_identifier_id, patient_id, identifier, identifier_type, preferred, location_id, creator, date_created, date_changed, changed_by, voided, voided_by, date_voided, void_reason, uuid FROM _patient_identifier
+        """))
+        conn.execute(text("SET FOREIGN_KEY_CHECKS=1"))
+        conn.commit()
+    info(f"Load patient_identifier completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
+
+
+def load_patient_program():
+    start_time = time.time()
+    target_engine = get_target_engine()
+    with target_engine.connect() as conn:
+        info("Loading data for patient_program table...")
+        conn.execute(text("SET FOREIGN_KEY_CHECKS=0"))
+        conn.execute(text("TRUNCATE TABLE patient_program"))
+        conn.execute(text("""
+        INSERT INTO patient_program (patient_program_id, patient_id, program_id, date_enrolled, date_completed, location_id, outcome_concept_id, creator, date_created, changed_by, date_changed, voided, voided_by, date_voided, void_reason, uuid)
+        SELECT patient_program_id, patient_id, program_id, date_enrolled, date_completed, location_id, outcome_concept_id, creator, date_created, changed_by, date_changed, voided, voided_by, date_voided, void_reason, uuid FROM _patient_program
+        """))
+        conn.execute(text("SET FOREIGN_KEY_CHECKS=1"))
+        conn.commit()
+    info(f"Load patient_program completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
+
+
+def load_patient_group():
+    start_time = time.time()
+    load_person()
+    load_person_name()
+    load_person_address()
+    load_person_attribute_type()
+    load_person_attribute()
+    load_patient()
+    load_patient_identifier_type()
+    load_patient_identifier()
+    load_patient_program()
+    info(f"Load patient group completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")

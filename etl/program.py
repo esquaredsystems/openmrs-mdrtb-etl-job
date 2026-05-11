@@ -89,7 +89,8 @@ def extract_program_group(drop_create):
     extract_program_workflow(drop_create=drop_create)
     info("Program workflow table created successfully")
     extract_program_workflow_state(drop_create=drop_create)
-    info(f"Program workflow state table created successfully (Time: {time.time() - start_time:.2f} seconds)")
+    info("Program workflow state table created successfully")
+    info(f"Extraction completed in {time.time() - start_time:.2f} seconds")
 
 ##### Loading functions #####
 def load_program():

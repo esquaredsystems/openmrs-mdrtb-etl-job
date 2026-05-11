@@ -73,11 +73,6 @@ def extract_encounter(drop_create=False):
     else:
         warning("No data found in source encounter table.")
 
-def extract_provider(drop_create=False):
-    target_engine = get_target_engine()
-    if drop_create:
-        create_provider_table(target_engine, drop_create=drop_create)
-
 def extract_encounter_provider(drop_create=False):
     target_engine = get_target_engine()
     if drop_create:
@@ -89,10 +84,9 @@ def extract_encounter_group(drop_create):
     info("Encounter type table created successfully")
     extract_encounter(drop_create=drop_create)
     info("Encounter table created successfully")
-    extract_provider(drop_create=drop_create)
-    info("Provider table created successfully")
     extract_encounter_provider(drop_create=drop_create)
-    info(f"Encounter provider table created successfully (Time: {time.time() - start_time:.2f} seconds)")
+    info("Encounter provider table created successfully")
+    info(f"Extraction completed in {time.time() - start_time:.2f} seconds")
 
 ##### Transformation functions #####
 def transform_provider():
@@ -147,9 +141,83 @@ def transform_encounter_provider():
 
 def transform_encounter_group():
     transform_provider()
-    # transform_encounter_provider()
+    transform_encounter_provider()
 
 ##### Loading functions #####
-def load_encounter_group():
-    pass
+def load_encounter_type():
+    start_time = time.time()
+    target_engine = get_target_engine()
+    with target_engine.connect() as conn:
+        info("Loading data for encounter_type table...")
+        conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
+        conn.execute(text("TRUNCATE TABLE encounter_type"))
+        try:
+            # Insert the default encounter_type
+            conn.execute(text("""
+                INSERT IGNORE INTO encounter_type (name, description, creator, date_created, retired, uuid) 
+                VALUES ('Drug Order', 'Created to attach with Orders for Openmrs 2x.', 1, current_timestamp(), 0, uuid())
+            """))
+            # Load from staging table
+            conn.execute(text("""
+                INSERT IGNORE INTO encounter_type (encounter_type_id, name, description, creator, date_created, retired, retired_by, date_retired, retire_reason, uuid)
+                SELECT encounter_type_id, name, description, creator, date_created, retired, retired_by, date_retired, retire_reason, uuid FROM _encounter_type
+            """))
+        finally:
+            conn.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
+        conn.commit()
+    info(f"Load encounter_type completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
+def load_encounter():
+    start_time = time.time()
+    target_engine = get_target_engine()
+    with target_engine.connect() as conn:
+        info("Loading data for encounter table...")
+        # INSERT IGNORE for records with date_created NOT in current year
+        conn.execute(text("""
+            INSERT IGNORE INTO encounter (encounter_id, encounter_type, patient_id, location_id, form_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid)
+            SELECT encounter_id, encounter_type, patient_id, location_id, form_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid FROM _encounter
+            WHERE YEAR(date_created) != YEAR(CURDATE())
+        """))
+        # UPSERT for records with date_created in current year (but do NOT reset uuid)
+        conn.execute(text("""
+            INSERT INTO encounter (encounter_id, encounter_type, patient_id, location_id, form_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid)
+            SELECT encounter_id, encounter_type, patient_id, location_id, form_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid FROM _encounter
+            WHERE YEAR(date_created) = YEAR(CURDATE())
+            ON DUPLICATE KEY UPDATE
+                encounter_type = VALUES(encounter_type),
+                patient_id = VALUES(patient_id),
+                location_id = VALUES(location_id),
+                form_id = VALUES(form_id),
+                encounter_datetime = VALUES(encounter_datetime),
+                creator = VALUES(creator),
+                date_created = VALUES(date_created),
+                voided = VALUES(voided),
+                voided_by = VALUES(voided_by),
+                date_voided = VALUES(date_voided),
+                void_reason = VALUES(void_reason),
+                changed_by = VALUES(changed_by),
+                date_changed = VALUES(date_changed)
+        """))
+        conn.commit()
+    info(f"Load encounter completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
+
+def load_encounter_provider():
+    start_time = time.time()
+    target_engine = get_target_engine()
+    with target_engine.connect() as conn:
+        info("Loading data for encounter_provider table...")
+        conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
+        try:
+            conn.execute(text("""
+                INSERT IGNORE INTO encounter_provider (encounter_id, provider_id, encounter_role_id, creator, date_created, changed_by, date_changed, voided, date_voided, voided_by, void_reason, uuid)
+                SELECT encounter_id, provider_id, encounter_role_id, creator, date_created, changed_by, date_changed, voided, date_voided, voided_by, void_reason, uuid FROM _encounter_provider
+            """))
+        finally:
+            conn.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
+        conn.commit()
+    info(f"Load encounter_provider completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
+
+def load_encounter_group():
+    load_encounter_type()
+    load_encounter()
+    load_encounter_provider()

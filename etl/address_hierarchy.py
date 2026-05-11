@@ -75,7 +75,8 @@ def extract_address_hierarchy_group(drop_create):
     extract_address_hierarchy_level(drop_create=drop_create)
     info("Extracting data from source database and inserting into target database...")
     extract_address_hierarchy_entry(drop_create=drop_create)
-    info(f"Address hierarchy level and entry tables created successfully (Time: {time.time() - start_time:.2f} seconds)")
+    info("Address hierarchy level and entry tables created successfully")
+    info(f"Extraction completed in {time.time() - start_time:.2f} seconds")
 
 ##### Loading functions #####
 def load_address_hierarchy_level():

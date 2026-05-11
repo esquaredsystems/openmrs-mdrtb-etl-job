@@ -182,6 +182,11 @@ def extract_user_role(drop_create=False):
     else:
         warning("No data found in source user_role table.")
 
+def extract_provider(drop_create=False):
+    target_engine = get_target_engine()
+    if drop_create:
+        create_provider_table(target_engine, drop_create=drop_create)
+
 def extract_user_group(drop_create):
     start_time = time.time()
     extract_privilege(drop_create=drop_create)
@@ -197,7 +202,10 @@ def extract_user_group(drop_create):
     extract_user_property(drop_create=drop_create)
     info("User property table created successfully")
     extract_user_role(drop_create=drop_create)
-    info(f"User role table created successfully (Time: {time.time() - start_time:.2f} seconds)")
+    info("User role table created successfully")
+    extract_provider(drop_create=drop_create)
+    info("Provider table created successfully")
+    info(f"Extraction completed in {time.time() - start_time:.2f} seconds")
 
 ##### Loading functions #####
 def load_privilege():
@@ -295,6 +303,19 @@ def load_user_role():
         conn.commit()
     info(f"Load user_role completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
+def load_provider():
+    start_time = time.time()
+    target_engine = get_target_engine()
+    select_insert_sql = """
+    INSERT IGNORE INTO provider (provider_id, person_id, name, identifier, creator, date_created, changed_by, date_changed, retired, retired_by, date_retired, retire_reason, uuid)
+    SELECT provider_id, person_id, name, identifier, creator, date_created, changed_by, date_changed, retired, retired_by, date_retired, retire_reason, uuid FROM _provider
+    """
+    with target_engine.connect() as conn:
+        info("Loading data for provider table...")
+        conn.execute(text(select_insert_sql))
+        conn.commit()
+    info(f"Load provider completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
+
 def load_user_group():
     load_privilege()
     load_role()
@@ -303,4 +324,4 @@ def load_user_group():
     load_users()
     load_user_property()
     load_user_role()
-
+    load_provider()

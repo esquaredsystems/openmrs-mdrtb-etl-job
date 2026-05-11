@@ -143,9 +143,27 @@ def extract_misc_group(drop_create):
     extract_notification_alert(drop_create=drop_create)
     info("Notification alert table created successfully")
     extract_notification_alert_recipient(drop_create=drop_create)
-    info(f"Notification alert recipient table created successfully (Time: {time.time() - start_time:.2f} seconds)")
+    info("Notification alert recipient table created successfully")
+    info(f"Extraction completed in {time.time() - start_time:.2f} seconds")
 
 ##### Loading functions #####
+def backup_global_property():
+    start_time = time.time()
+    target_engine = get_target_engine()
+    # Create backup table with drop-create
+    create_global_property_bak_table(target_engine, drop_create=True)
+
+    # Copy current global_property data to backup
+    copy_query = """
+    INSERT INTO _global_property_bak (property, property_value, description, uuid, datatype, datatype_config, preferred_handler, handler_config) 
+    SELECT property, property_value, description, uuid, datatype, datatype_config, preferred_handler, handler_config FROM global_property
+    """
+    with target_engine.connect() as conn:
+        info("Creating backup of global_property table...")
+        conn.execute(text(copy_query))
+        conn.commit()
+    info(f"Backup global_property completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
+
 def load_global_property():
     start_time = time.time()
     target_engine = get_target_engine()
@@ -173,6 +191,6 @@ def load_relationship_type():
     info(f"Load relationship_type completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
 def load_misc_group():
+    backup_global_property()
     load_global_property()
     load_relationship_type()
-

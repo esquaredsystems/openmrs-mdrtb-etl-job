@@ -76,9 +76,58 @@ def extract_orders_group(drop_create):
     extract_orders(drop_create=drop_create)
     info("Orders table created successfully")
     extract_order_type(drop_create=drop_create)
-    info(f"Order type table created successfully (Time: {time.time() - start_time:.2f} seconds)")
+    info("Order type table created successfully")
+    info(f"Extraction completed in {time.time() - start_time:.2f} seconds")
 
 ##### Loading functions #####
+def load_order_type():
+    start_time = time.time()
+    target_engine = get_target_engine()
+    select_insert_sql = """
+    INSERT IGNORE INTO order_type (order_type_id, name, description, creator, date_created, retired, retired_by, date_retired, retire_reason, uuid)
+    SELECT order_type_id, name, description, creator, date_created, retired, retired_by, date_retired, retire_reason, uuid
+    FROM _order_type
+    """
+    with target_engine.connect() as conn:
+        info("Loading data for order_type table...")
+        conn.execute(text(select_insert_sql))
+        conn.commit()
+    info(f"Load order_type completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
+
+
+def load_order():
+    start_time = time.time()
+    target_engine = get_target_engine()
+    select_insert_sql = """
+    INSERT INTO orders (
+        order_id, order_type_id, concept_id, orderer, encounter_id, instructions, 
+        date_activated, auto_expire_date, date_stopped,
+        order_reason, order_reason_non_coded, 
+        creator, date_created, voided, voided_by, date_voided, void_reason, patient_id,
+        accession_number, uuid, urgency, order_number, order_action, care_setting
+    )
+    SELECT
+        o.order_id, o.order_type_id, o.concept_id, COALESCE(p.provider_id, o.orderer) AS orderer, o.encounter_id, o.instructions,
+        o.start_date AS date_activated, o.auto_expire_date, o.discontinued_date AS date_stopped,
+        o.discontinued_reason AS order_reason, o.discontinued_reason_non_coded AS order_reason_non_coded,
+        o.creator, o.date_created, o.voided, o.voided_by, o.date_voided, o.void_reason, o.patient_id,
+        o.accession_number, o.uuid, 'ROUTINE' AS urgency, CONCAT('ORD-', o.order_id) AS order_number,
+        (CASE WHEN o.discontinued = 1 THEN 'DISCONTINUE' ELSE 'NEW' END) AS order_action,
+        COALESCE((SELECT MIN(care_setting_id) FROM care_setting), 1) AS care_setting
+    FROM _orders o
+    LEFT JOIN users u ON u.user_id = o.orderer
+    LEFT JOIN provider p ON p.person_id = u.person_id AND p.retired = 0
+    """
+    with target_engine.connect() as conn:
+        info("Loading data for orders table...")
+        conn.execute(text(select_insert_sql))
+        conn.commit()
+    info(f"Load orders completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
+
+
 def load_orders_group():
-    pass
+    start_time = time.time()
+    load_order_type()
+    load_order()
+    info(f"Load orders group completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 

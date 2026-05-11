@@ -255,6 +255,7 @@ def create_field_table(engine, drop_create=False):
         conn.execute(text(create_query))
         conn.commit()
 
+
 def create_field_type_table(engine, drop_create=False):
     with engine.connect() as conn:
         if drop_create:
@@ -287,6 +288,15 @@ def create_global_property_table(engine, drop_create=False):
         if drop_create:
             conn.execute(text("DROP TABLE IF EXISTS _global_property"))
         create_query = "CREATE TABLE _global_property (property varchar(1024) NOT NULL, property_value text, description text, uuid char(38), datatype varchar(255), datatype_config text, preferred_handler varchar(255), handler_config text) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        conn.execute(text(create_query))
+        conn.commit()
+
+
+def create_global_property_bak_table(engine, drop_create=False):
+    with engine.connect() as conn:
+        if drop_create:
+            conn.execute(text("DROP TABLE IF EXISTS _global_property_bak"))
+        create_query = "CREATE TABLE _global_property_bak (property varchar(1024) NOT NULL, property_value text, description text, uuid char(38), datatype varchar(255), datatype_config text, preferred_handler varchar(255), handler_config text, backup_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         conn.execute(text(create_query))
         conn.commit()
 
