@@ -153,11 +153,7 @@ def load_drug_order():
     # equivalent_daily_dose units
     with target_engine.connect() as conn:
         info("Loading data for drug_order table...")
-        conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
-        try:
-            conn.execute(text(select_insert_sql))
-        finally:
-            conn.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
+        conn.execute(text(select_insert_sql))
         conn.commit()
     info(f"Load drug_order completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 

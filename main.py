@@ -3,7 +3,7 @@ import time
 
 from sqlalchemy import text
 
-from config.database import get_source_engine, get_target_engine
+from config.database import get_source_engine, get_target_engine, set_foreign_key_checks
 from etl.address_hierarchy import *
 from etl.cohort import *
 from etl.concept import *
@@ -104,8 +104,6 @@ if __name__ == "__main__":
         assert result.scalar() == 1, "Connection to target database failed"
         info("Target connection successful")
 
-    load_obs_group()
-
     if args.extract:
         run_extract_job(hard_reset=args.hard_reset)
 
@@ -113,6 +111,8 @@ if __name__ == "__main__":
         run_transform_job()
 
     if args.load:
+        set_foreign_key_checks(False)
         run_load_job()
+        set_foreign_key_checks(True)
 
     post_etl_job()

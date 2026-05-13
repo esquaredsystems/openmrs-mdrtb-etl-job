@@ -10,6 +10,7 @@ from models.schema_models import *
 from utils.helpers import read_excel_sheet
 from utils.logger import info, warning
 
+
 ##### Extraction functions #####
 def extract_concept(drop_create=False):
     target_engine = get_target_engine()
@@ -33,11 +34,13 @@ def extract_concept(drop_create=False):
             "version", "changed_by", "date_changed", "retired_by",
             "date_retired", "retire_reason", "uuid"
         ]].to_dict(orient='records')
-        insert_query = text("INSERT INTO _concept (concept_id, retired, short_name, description, form_text, datatype_id, class_id, is_set, creator, date_created, version, changed_by, date_changed, retired_by, date_retired, retire_reason, uuid) VALUES (:concept_id, :retired, :short_name, :description, :form_text, :datatype_id, :class_id, :is_set, :creator, :date_created, :version, :changed_by, :date_changed, :retired_by, :date_retired, :retire_reason, :uuid)")
+        insert_query = text(
+            "INSERT INTO _concept (concept_id, retired, short_name, description, form_text, datatype_id, class_id, is_set, creator, date_created, version, changed_by, date_changed, retired_by, date_retired, retire_reason, uuid) VALUES (:concept_id, :retired, :short_name, :description, :form_text, :datatype_id, :class_id, :is_set, :creator, :date_created, :version, :changed_by, :date_changed, :retired_by, :date_retired, :retire_reason, :uuid)")
         with target_engine.connect() as target_conn:
             target_conn.execute(insert_query, source_data)
             target_conn.commit()
         info("Import from concept_mapping.xlsx concept sheet completed successfully.")
+
 
 def extract_concept_answer(drop_create=False):
     source_engine = get_source_engine()
@@ -53,16 +56,20 @@ def extract_concept_answer(drop_create=False):
             target_conn.commit()
 
         info(f"Inserting {len(source_data)} records into target _concept_answer table...")
-        insert_query = text("INSERT INTO _concept_answer (concept_answer_id, concept_id, answer_concept, answer_drug, creator, date_created, sort_weight, uuid) VALUES (:concept_answer_id, :concept_id, :answer_concept, :answer_drug, :creator, :date_created, :sort_weight, :uuid)")
+        insert_query = text(
+            "INSERT INTO _concept_answer (concept_answer_id, concept_id, answer_concept, answer_drug, creator, date_created, sort_weight, uuid) VALUES (:concept_answer_id, :concept_id, :answer_concept, :answer_drug, :creator, :date_created, :sort_weight, :uuid)")
         with target_engine.connect() as target_conn:
             for row in source_data:
                 target_conn.execute(insert_query, {
-                    "concept_answer_id": row.concept_answer_id, "concept_id": row.concept_id, "answer_concept": row.answer_concept, "answer_drug": row.answer_drug, "creator": row.creator, "date_created": row.date_created, "sort_weight": '1', "uuid": row.uuid
+                    "concept_answer_id": row.concept_answer_id, "concept_id": row.concept_id,
+                    "answer_concept": row.answer_concept, "answer_drug": row.answer_drug, "creator": row.creator,
+                    "date_created": row.date_created, "sort_weight": '1', "uuid": row.uuid
                 })
             target_conn.commit()
         info("Import completed successfully.")
     else:
         warning("No data found in source concept_answer table.")
+
 
 def extract_concept_class(drop_create=False):
     source_engine = get_source_engine()
@@ -78,16 +85,21 @@ def extract_concept_class(drop_create=False):
             target_conn.commit()
 
         info(f"Inserting {len(source_data)} records into target _concept_class table...")
-        insert_query = text("INSERT INTO _concept_class (concept_class_id, name, description, creator, date_created, retired, retired_by, date_retired, retire_reason, uuid) VALUES (:concept_class_id, :name, :description, :creator, :date_created, :retired, :retired_by, :date_retired, :retire_reason, :uuid)")
+        insert_query = text(
+            "INSERT INTO _concept_class (concept_class_id, name, description, creator, date_created, retired, retired_by, date_retired, retire_reason, uuid) VALUES (:concept_class_id, :name, :description, :creator, :date_created, :retired, :retired_by, :date_retired, :retire_reason, :uuid)")
         with target_engine.connect() as target_conn:
             for row in source_data:
                 target_conn.execute(insert_query, {
-                    "concept_class_id": row.concept_class_id, "name": row.name, "description": row.description, "creator": row.creator, "date_created": row.date_created, "retired": row.retired, "retired_by": row.retired_by, "date_retired": row.date_retired, "retire_reason": row.retire_reason, "uuid": row.uuid
+                    "concept_class_id": row.concept_class_id, "name": row.name, "description": row.description,
+                    "creator": row.creator, "date_created": row.date_created, "retired": row.retired,
+                    "retired_by": row.retired_by, "date_retired": row.date_retired, "retire_reason": row.retire_reason,
+                    "uuid": row.uuid
                 })
             target_conn.commit()
         info("Import completed successfully.")
     else:
         warning("No data found in source concept_class table.")
+
 
 def extract_concept_complex(drop_create=False):
     source_engine = get_source_engine()
@@ -114,6 +126,7 @@ def extract_concept_complex(drop_create=False):
     else:
         warning("No data found in source concept_complex table.")
 
+
 def extract_concept_datatype(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
@@ -128,16 +141,21 @@ def extract_concept_datatype(drop_create=False):
             target_conn.commit()
 
         info(f"Inserting {len(source_data)} records into target _concept_datatype table...")
-        insert_query = text("INSERT INTO _concept_datatype (concept_datatype_id, name, hl7_abbreviation, description, creator, date_created, retired, retired_by, date_retired, retire_reason, uuid) VALUES (:concept_datatype_id, :name, :hl7_abbreviation, :description, :creator, :date_created, :retired, :retired_by, :date_retired, :retire_reason, :uuid)")
+        insert_query = text(
+            "INSERT INTO _concept_datatype (concept_datatype_id, name, hl7_abbreviation, description, creator, date_created, retired, retired_by, date_retired, retire_reason, uuid) VALUES (:concept_datatype_id, :name, :hl7_abbreviation, :description, :creator, :date_created, :retired, :retired_by, :date_retired, :retire_reason, :uuid)")
         with target_engine.connect() as target_conn:
             for row in source_data:
                 target_conn.execute(insert_query, {
-                    "concept_datatype_id": row.concept_datatype_id, "name": row.name, "hl7_abbreviation": row.hl7_abbreviation, "description": row.description, "creator": row.creator, "date_created": row.date_created, "retired": row.retired, "retired_by": row.retired_by, "date_retired": row.date_retired, "retire_reason": row.retire_reason, "uuid": row.uuid
+                    "concept_datatype_id": row.concept_datatype_id, "name": row.name,
+                    "hl7_abbreviation": row.hl7_abbreviation, "description": row.description, "creator": row.creator,
+                    "date_created": row.date_created, "retired": row.retired, "retired_by": row.retired_by,
+                    "date_retired": row.date_retired, "retire_reason": row.retire_reason, "uuid": row.uuid
                 })
             target_conn.commit()
         info("Import completed successfully.")
     else:
         warning("No data found in source concept_datatype table.")
+
 
 def extract_concept_description(drop_create=False):
     source_engine = get_source_engine()
@@ -153,16 +171,21 @@ def extract_concept_description(drop_create=False):
             target_conn.commit()
 
         info(f"Inserting {len(source_data)} records into target _concept_description table...")
-        insert_query = text("INSERT INTO _concept_description (concept_description_id, concept_id, description, locale, creator, date_created, changed_by, date_changed, uuid) VALUES (:concept_description_id, :concept_id, :description, :locale, :creator, :date_created, :changed_by, :date_changed, :uuid)")
+        insert_query = text(
+            "INSERT INTO _concept_description (concept_description_id, concept_id, description, locale, creator, date_created, changed_by, date_changed, uuid) VALUES (:concept_description_id, :concept_id, :description, :locale, :creator, :date_created, :changed_by, :date_changed, :uuid)")
         with target_engine.connect() as target_conn:
             for row in source_data:
                 target_conn.execute(insert_query, {
-                    "concept_description_id": row.concept_description_id, "concept_id": row.concept_id, "description": row.description, "locale": row.locale, "creator": row.creator, "date_created": row.date_created, "changed_by": row.changed_by, "date_changed": row.date_changed, "uuid": row.uuid
+                    "concept_description_id": row.concept_description_id, "concept_id": row.concept_id,
+                    "description": row.description, "locale": row.locale, "creator": row.creator,
+                    "date_created": row.date_created, "changed_by": row.changed_by, "date_changed": row.date_changed,
+                    "uuid": row.uuid
                 })
             target_conn.commit()
         info("Import completed successfully.")
     else:
         warning("No data found in source concept_description table.")
+
 
 def extract_concept_map(drop_create=False):
     target_engine = get_target_engine()
@@ -175,7 +198,8 @@ def extract_concept_map(drop_create=False):
             target_conn.execute(text("TRUNCATE TABLE _concept_map"))
             target_conn.commit()
 
-        info(f"Inserting {len(df)} records from concept_mapping.xlsx concept_map sheet into target _concept_map table...")
+        info(
+            f"Inserting {len(df)} records from concept_mapping.xlsx concept_map sheet into target _concept_map table...")
         df = df.replace({np.nan: None, pd.NaT: None})
         for column in ["comment"]:
             if column not in df.columns:
@@ -191,6 +215,7 @@ def extract_concept_map(drop_create=False):
             target_conn.commit()
         info("Import from concept_mapping.xlsx concept_map sheet completed successfully.")
 
+
 def extract_concept_name(drop_create=False):
     target_engine = get_target_engine()
     if drop_create:
@@ -203,9 +228,11 @@ def extract_concept_name(drop_create=False):
             target_conn.execute(text("TRUNCATE TABLE _concept_name"))
             target_conn.commit()
 
-        info(f"Inserting {len(df)} records from concept_mapping.xlsx concept_name sheet into target _concept_name table...")
+        info(
+            f"Inserting {len(df)} records from concept_mapping.xlsx concept_name sheet into target _concept_name table...")
         df = df.rename(columns={"type": "concept_name_type"})
-        insert_query = text("INSERT INTO _concept_name (concept_name_id, concept_id, name, locale, locale_preferred, creator, date_created, concept_name_type, voided, voided_by, date_voided, void_reason, uuid) VALUES (:concept_name_id, :concept_id, :name, :locale, :locale_preferred, :creator, :date_created, :concept_name_type, :voided, :voided_by, :date_voided, :void_reason, :uuid)")
+        insert_query = text(
+            "INSERT INTO _concept_name (concept_name_id, concept_id, name, locale, locale_preferred, creator, date_created, concept_name_type, voided, voided_by, date_voided, void_reason, uuid) VALUES (:concept_name_id, :concept_id, :name, :locale, :locale_preferred, :creator, :date_created, :concept_name_type, :voided, :voided_by, :date_voided, :void_reason, :uuid)")
         with target_engine.connect() as target_conn:
             max_id = target_conn.execute(text("SELECT COALESCE(MAX(concept_name_id), 0) FROM _concept_name")).scalar()
             df["concept_name_id"] = range(max_id + 1, max_id + len(df) + 1)
@@ -226,6 +253,7 @@ def extract_concept_name(drop_create=False):
             target_conn.commit()
         info("Import from concept_mapping.xlsx concept_name sheet completed successfully.")
 
+
 def extract_concept_name_tag(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
@@ -240,16 +268,21 @@ def extract_concept_name_tag(drop_create=False):
             target_conn.commit()
 
         info(f"Inserting {len(source_data)} records into target _concept_name_tag table...")
-        insert_query = text("INSERT INTO _concept_name_tag (concept_name_tag_id, tag, description, creator, date_created, voided, voided_by, date_voided, void_reason, uuid) VALUES (:concept_name_tag_id, :tag, :description, :creator, :date_created, :voided, :voided_by, :date_voided, :void_reason, :uuid)")
+        insert_query = text(
+            "INSERT INTO _concept_name_tag (concept_name_tag_id, tag, description, creator, date_created, voided, voided_by, date_voided, void_reason, uuid) VALUES (:concept_name_tag_id, :tag, :description, :creator, :date_created, :voided, :voided_by, :date_voided, :void_reason, :uuid)")
         with target_engine.connect() as target_conn:
             for row in source_data:
                 target_conn.execute(insert_query, {
-                    "concept_name_tag_id": row.concept_name_tag_id, "tag": row.tag, "description": row.description, "creator": row.creator, "date_created": row.date_created, "voided": row.voided, "voided_by": row.voided_by, "date_voided": row.date_voided, "void_reason": row.void_reason, "uuid": row.uuid
+                    "concept_name_tag_id": row.concept_name_tag_id, "tag": row.tag, "description": row.description,
+                    "creator": row.creator, "date_created": row.date_created, "voided": row.voided,
+                    "voided_by": row.voided_by, "date_voided": row.date_voided, "void_reason": row.void_reason,
+                    "uuid": row.uuid
                 })
             target_conn.commit()
         info("Import completed successfully.")
     else:
         warning("No data found in source concept_name_tag table.")
+
 
 def extract_concept_name_tag_map(drop_create=False):
     source_engine = get_source_engine()
@@ -265,7 +298,8 @@ def extract_concept_name_tag_map(drop_create=False):
             target_conn.commit()
 
         info(f"Inserting {len(source_data)} records into target _concept_name_tag_map table...")
-        insert_query = text("INSERT INTO _concept_name_tag_map (concept_name_id, concept_name_tag_id) VALUES (:concept_name_id, :concept_name_tag_id)")
+        insert_query = text(
+            "INSERT INTO _concept_name_tag_map (concept_name_id, concept_name_tag_id) VALUES (:concept_name_id, :concept_name_tag_id)")
         with target_engine.connect() as target_conn:
             for row in source_data:
                 target_conn.execute(insert_query, {
@@ -275,6 +309,7 @@ def extract_concept_name_tag_map(drop_create=False):
         info("Import completed successfully.")
     else:
         warning("No data found in source concept_name_tag_map table.")
+
 
 def extract_concept_numeric(drop_create=False):
     source_engine = get_source_engine()
@@ -290,16 +325,20 @@ def extract_concept_numeric(drop_create=False):
             target_conn.commit()
 
         info(f"Inserting {len(source_data)} records into target _concept_numeric table...")
-        insert_query = text("INSERT INTO _concept_numeric (concept_id, hi_absolute, hi_critical, hi_normal, low_absolute, low_critical, low_normal, units, precise) VALUES (:concept_id, :hi_absolute, :hi_critical, :hi_normal, :low_absolute, :low_critical, :low_normal, :units, :precise)")
+        insert_query = text(
+            "INSERT INTO _concept_numeric (concept_id, hi_absolute, hi_critical, hi_normal, low_absolute, low_critical, low_normal, units, precise) VALUES (:concept_id, :hi_absolute, :hi_critical, :hi_normal, :low_absolute, :low_critical, :low_normal, :units, :precise)")
         with target_engine.connect() as target_conn:
             for row in source_data:
                 target_conn.execute(insert_query, {
-                    "concept_id": row.concept_id, "hi_absolute": row.hi_absolute, "hi_critical": row.hi_critical, "hi_normal": row.hi_normal, "low_absolute": row.low_absolute, "low_critical": row.low_critical, "low_normal": row.low_normal, "units": row.units, "precise": row.precise
+                    "concept_id": row.concept_id, "hi_absolute": row.hi_absolute, "hi_critical": row.hi_critical,
+                    "hi_normal": row.hi_normal, "low_absolute": row.low_absolute, "low_critical": row.low_critical,
+                    "low_normal": row.low_normal, "units": row.units, "precise": row.precise
                 })
             target_conn.commit()
         info("Import completed successfully.")
     else:
         warning("No data found in source concept_numeric table.")
+
 
 def extract_concept_reference_source(drop_create=False):
     target_engine = get_target_engine()
@@ -314,7 +353,8 @@ def extract_concept_reference_source(drop_create=False):
 
         info(f"Inserting {len(df)} records into target _concept_reference_source table...")
         df = df.replace({np.nan: None})  # critical line
-        insert_query = text("INSERT INTO _concept_reference_source (concept_source_id, name, description, hl7_code, creator, date_created, retired, retired_by, date_retired, retire_reason, uuid) VALUES (:concept_source_id, :name, :description, :hl7_code, :creator, :date_created, :retired, :retired_by, :date_retired, :retire_reason, :uuid)")
+        insert_query = text(
+            "INSERT INTO _concept_reference_source (concept_source_id, name, description, hl7_code, creator, date_created, retired, retired_by, date_retired, retire_reason, uuid) VALUES (:concept_source_id, :name, :description, :hl7_code, :creator, :date_created, :retired, :retired_by, :date_retired, :retire_reason, :uuid)")
         source_data = df.to_dict(orient='records')
 
         with target_engine.connect() as target_conn:
@@ -322,10 +362,12 @@ def extract_concept_reference_source(drop_create=False):
             target_conn.commit()
         info("Import completed successfully.")
 
+
 def extract_concept_reference_term_table(drop_create=False):
     target_engine = get_target_engine()
     if drop_create:
         create_concept_reference_term_table(target_engine, drop_create=drop_create)
+
 
 def extract_concept_set(drop_create=False):
     target_engine = get_target_engine()
@@ -338,19 +380,23 @@ def extract_concept_set(drop_create=False):
             target_conn.execute(text("TRUNCATE TABLE _concept_set"))
             target_conn.commit()
 
-        info(f"Inserting {len(df)} records from concept_mapping.xlsx concept_set sheet into target _concept_set table...")
+        info(
+            f"Inserting {len(df)} records from concept_mapping.xlsx concept_set sheet into target _concept_set table...")
         df = df.replace({np.nan: None, pd.NaT: None})
         source_data = df[[
             "concept_set_id", "concept_id", "concept_set", "sort_weight", "creator", "date_created", "uuid"
         ]].to_dict(orient='records')
-        insert_query = text("INSERT INTO _concept_set (concept_set_id, concept_id, concept_set, sort_weight, creator, date_created, uuid) VALUES (:concept_set_id, :concept_id, :concept_set, :sort_weight, :creator, :date_created, :uuid)")
+        insert_query = text(
+            "INSERT INTO _concept_set (concept_set_id, concept_id, concept_set, sort_weight, creator, date_created, uuid) VALUES (:concept_set_id, :concept_id, :concept_set, :sort_weight, :creator, :date_created, :uuid)")
         with target_engine.connect() as target_conn:
             target_conn.execute(insert_query, source_data)
             target_conn.commit()
         info("Import from concept_mapping.xlsx concept_set sheet completed successfully.")
 
+
 def extract_concept_word(drop_create=False):
     info("Concept word comes prefilled.")
+
 
 def extract_concept_group(drop_create):
     start_time = time.time()
@@ -382,6 +428,7 @@ def extract_concept_group(drop_create):
     info("Concept word table created successfully")
     info(f"Extraction completed in {time.time() - start_time:.2f} seconds")
 
+
 ##### Transformation functions #####
 def transform_concept_reference_term():
     start_time = time.time()
@@ -401,7 +448,7 @@ def transform_concept_reference_term():
         info("(Re)creating _concept_reference_term table...")
         create_concept_reference_term_table(target_engine, drop_create=True)
         info("Transforming data to fill _concept_map table...")
-        insert_sql= text("""
+        insert_sql = text("""
             INSERT INTO _concept_reference_term (concept_reference_term_id, concept_source_id, name, code, version, description, creator, date_created, date_changed, changed_by, retired, retired_by, date_retired, retire_reason, uuid) 
             VALUES (:concept_reference_term_id, :concept_source_id, :name, :code, :version, :description, :creator, :date_created, :date_changed, :changed_by, :retired, :retired_by, :date_retired, :retire_reason, :uuid)
         """)
@@ -425,12 +472,15 @@ def transform_concept_reference_term():
                     "uuid": row.uuid
                 })
             target_conn.commit()
-        info(f"Transform _concept_reference_term completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
+        info(
+            f"Transform _concept_reference_term completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
     else:
         warning("No data found in source _concept_map table.")
 
+
 def transform_concept_group():
     transform_concept_reference_term()
+
 
 ##### Loading functions #####
 def load_concept_class():
@@ -452,6 +502,7 @@ def load_concept_class():
         conn.commit()
     info(f"Load concept_class completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
+
 def load_concept_datatype():
     start_time = time.time()
     target_engine = get_target_engine()
@@ -464,6 +515,7 @@ def load_concept_datatype():
         conn.execute(text(select_insert_sql))
         conn.commit()
     info(f"Load concept_datatype completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
+
 
 def load_concept_name_tag():
     start_time = time.time()
@@ -478,6 +530,7 @@ def load_concept_name_tag():
         conn.commit()
     info(f"Load concept_name_tag completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
+
 def load_concept():
     start_time = time.time()
     target_engine = get_target_engine()
@@ -490,6 +543,7 @@ def load_concept():
         conn.execute(text(select_insert_sql))
         conn.commit()
     info(f"Load concept completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
+
 
 def load_concept_reference_source():
     start_time = time.time()
@@ -504,6 +558,7 @@ def load_concept_reference_source():
         conn.commit()
     info(f"Load concept_reference_source completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
+
 def load_concept_answer():
     start_time = time.time()
     target_engine = get_target_engine()
@@ -517,6 +572,7 @@ def load_concept_answer():
         conn.commit()
     info(f"Load concept_answer completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
+
 def load_concept_complex():
     start_time = time.time()
     target_engine = get_target_engine()
@@ -528,15 +584,12 @@ def load_concept_complex():
         conn.commit()
     info(f"Load concept_complex completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
+
 def load_concept_name():
     start_time = time.time()
     target_engine = get_target_engine()
     with target_engine.connect() as conn:
         info("Loading data for concept_name table...")
-        # Disable foreign key checks
-        conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
-        conn.commit()
-        
         # Run UPSERT
         upsert_sql = """
         INSERT INTO concept_name (concept_name_id, concept_id, name, locale, locale_preferred, creator, date_created, concept_name_type, voided, voided_by, date_voided, void_reason, uuid)
@@ -545,11 +598,8 @@ def load_concept_name():
         """
         conn.execute(text(upsert_sql))
         conn.commit()
-        
-        # Enable foreign key checks
-        conn.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
-        conn.commit()
     info(f"Load concept_name completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
+
 
 def load_concept_description():
     start_time = time.time()
@@ -564,6 +614,7 @@ def load_concept_description():
         conn.commit()
     info(f"Load concept_name completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
+
 def load_concept_numeric():
     start_time = time.time()
     target_engine = get_target_engine()
@@ -576,6 +627,7 @@ def load_concept_numeric():
         conn.execute(text(select_insert_sql))
         conn.commit()
     info(f"Load concept_numeric completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
+
 
 def load_concept_reference_term():
     start_time = time.time()
@@ -590,6 +642,7 @@ def load_concept_reference_term():
         conn.commit()
     info(f"Load concept_reference_term completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
+
 def load_concept_map_tag():
     start_time = time.time()
     target_engine = get_target_engine()
@@ -603,6 +656,7 @@ def load_concept_map_tag():
         conn.commit()
     info(f"Load concept_map_tag completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
+
 def load_concept_set():
     start_time = time.time()
     target_engine = get_target_engine()
@@ -615,6 +669,7 @@ def load_concept_set():
         conn.execute(text(select_insert_sql))
         conn.commit()
     info(f"Load concept_set completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
+
 
 def load_concept_group():
     # Sequenced to avoid foreign key constraint error

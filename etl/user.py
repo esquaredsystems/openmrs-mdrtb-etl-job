@@ -269,11 +269,7 @@ def load_users():
     """
     with target_engine.connect() as conn:
         info("Loading data for users table...")
-        conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
-        try:
-            conn.execute(text(select_insert_sql))
-        finally:
-            conn.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
+        conn.execute(text(select_insert_sql))
         conn.commit()
     info(f"Load users completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 

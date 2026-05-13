@@ -432,13 +432,11 @@ def load_patient():
     target_engine = get_target_engine()
     with target_engine.connect() as conn:
         info("Loading data for patient table...")
-        conn.execute(text("SET FOREIGN_KEY_CHECKS=0"))
         conn.execute(text("TRUNCATE TABLE patient"))
         conn.execute(text("""
         INSERT INTO patient (patient_id, creator, date_created, changed_by, date_changed, voided, voided_by, date_voided, void_reason)
         SELECT patient_id, creator, date_created, changed_by, date_changed, voided, voided_by, date_voided, void_reason FROM _patient
         """))
-        conn.execute(text("SET FOREIGN_KEY_CHECKS=1"))
         conn.commit()
     info(f"Load patient completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
@@ -448,7 +446,6 @@ def load_patient_identifier_type():
     target_engine = get_target_engine()
     with target_engine.connect() as conn:
         info("Loading data for patient_identifier_type table...")
-        conn.execute(text("SET FOREIGN_KEY_CHECKS=0"))
         conn.execute(text("TRUNCATE TABLE patient_identifier_type"))
         conn.execute(text("""
         INSERT INTO patient_identifier_type (patient_identifier_type_id, name, description, format, check_digit, creator, date_created, required, format_description, validator, location_behavior, retired, uuid)
@@ -458,7 +455,6 @@ def load_patient_identifier_type():
         INSERT IGNORE INTO patient_identifier_type (patient_identifier_type_id, name, description, format, check_digit, creator, date_created, required, format_description, validator, location_behavior, retired, retired_by, date_retired, retire_reason, uuid)
         SELECT patient_identifier_type_id, name, description, format, check_digit, creator, date_created, required, format_description, validator, location_behavior, retired, retired_by, date_retired, retire_reason, uuid FROM _patient_identifier_type
         """))
-        conn.execute(text("SET FOREIGN_KEY_CHECKS=1"))
         conn.commit()
     info(f"Load patient_identifier_type completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
@@ -468,13 +464,11 @@ def load_patient_identifier():
     target_engine = get_target_engine()
     with target_engine.connect() as conn:
         info("Loading data for patient_identifier table...")
-        conn.execute(text("SET FOREIGN_KEY_CHECKS=0"))
         conn.execute(text("TRUNCATE TABLE patient_identifier"))
         conn.execute(text("""
         INSERT INTO patient_identifier (patient_identifier_id, patient_id, identifier, identifier_type, preferred, location_id, creator, date_created, date_changed, changed_by, voided, voided_by, date_voided, void_reason, uuid)
         SELECT patient_identifier_id, patient_id, identifier, identifier_type, preferred, location_id, creator, date_created, date_changed, changed_by, voided, voided_by, date_voided, void_reason, uuid FROM _patient_identifier
         """))
-        conn.execute(text("SET FOREIGN_KEY_CHECKS=1"))
         conn.commit()
     info(f"Load patient_identifier completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
@@ -484,13 +478,11 @@ def load_patient_program():
     target_engine = get_target_engine()
     with target_engine.connect() as conn:
         info("Loading data for patient_program table...")
-        conn.execute(text("SET FOREIGN_KEY_CHECKS=0"))
         conn.execute(text("TRUNCATE TABLE patient_program"))
         conn.execute(text("""
         INSERT INTO patient_program (patient_program_id, patient_id, program_id, date_enrolled, date_completed, location_id, outcome_concept_id, creator, date_created, changed_by, date_changed, voided, voided_by, date_voided, void_reason, uuid)
         SELECT patient_program_id, patient_id, program_id, date_enrolled, date_completed, location_id, outcome_concept_id, creator, date_created, changed_by, date_changed, voided, voided_by, date_voided, void_reason, uuid FROM _patient_program
         """))
-        conn.execute(text("SET FOREIGN_KEY_CHECKS=1"))
         conn.commit()
     info(f"Load patient_program completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
