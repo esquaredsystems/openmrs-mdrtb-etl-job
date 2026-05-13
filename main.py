@@ -111,8 +111,8 @@ if __name__ == "__main__":
         run_transform_job()
 
     if args.load:
-        set_foreign_key_checks(False)
+        set_foreign_key_checks(target, False)
         run_load_job()
-        set_foreign_key_checks(True)
+        set_foreign_key_checks(target, True)
 
     post_etl_job()
