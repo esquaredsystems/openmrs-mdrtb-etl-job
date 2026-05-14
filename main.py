@@ -19,7 +19,25 @@ from etl.patient import *
 from etl.program import *
 from etl.report import *
 from etl.user import *
+from models.text_columns import text_columns
 from utils.logger import info
+
+
+def pre_etl_job():
+    target_engine = get_target_engine()
+    with target_engine.connect() as conn:
+        # Make sure all text columns are utf8mb4
+        select_query = """
+        select concat('ALTER TABLE ', c.TABLE_NAME, ' MODIFY COLUMN ', c.COLUMN_NAME, ' ', c.COLUMN_TYPE, ' CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;') as q from information_schema.`COLUMNS` c
+        where c.TABLE_SCHEMA = 'openmrs_28' and c.DATA_TYPE in ('char', 'text', 'varchar') and c.COLUMN_NAME <> 'uuid' and c.CHARACTER_SET_NAME <> 'utf8mb4'
+        """
+        result = conn.execute(text(select_query))
+        for row in result:
+            alter_query = row[0]
+            info(f"Executing query: {alter_query}")
+            conn.execute(text(alter_query))
+            conn.commit()
+    info("Pre-ETL job completed successfully")
 
 
 def run_extract_job(hard_reset=False):
@@ -103,6 +121,8 @@ if __name__ == "__main__":
         result = conn.execute(text("SELECT 1"))
         assert result.scalar() == 1, "Connection to target database failed"
         info("Target connection successful")
+
+    pre_etl_job()
 
     if args.extract:
         run_extract_job(hard_reset=args.hard_reset)
