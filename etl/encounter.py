@@ -190,13 +190,16 @@ def load_encounter():
         conn.execute(text("""
             INSERT IGNORE INTO encounter (encounter_id, encounter_type, patient_id, location_id, form_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid)
             SELECT encounter_id, encounter_type, patient_id, location_id, form_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid FROM _encounter
-            WHERE YEAR(date_created) < YEAR(CURDATE())
+            WHERE YEAR(date_created) < YEAR(CURRENT_TIMESTAMP())
         """))
+        conn.commit()
         # UPSERT for records with date_created in current year (but do NOT reset uuid)
+        conn.execute(text(f"SET FOREIGN_KEY_CHECKS = 0"))
+        conn.commit()
         conn.execute(text("""
             INSERT INTO encounter (encounter_id, encounter_type, patient_id, location_id, form_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid)
             SELECT encounter_id, encounter_type, patient_id, location_id, form_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid FROM _encounter
-            WHERE YEAR(date_created) => YEAR(CURDATE())
+            WHERE YEAR(date_created) >= YEAR(CURRENT_TIMESTAMP())
             ON DUPLICATE KEY UPDATE
                 encounter_type = VALUES(encounter_type),
                 patient_id = VALUES(patient_id),
@@ -212,6 +215,7 @@ def load_encounter():
                 changed_by = VALUES(changed_by),
                 date_changed = VALUES(date_changed)
         """))
+        conn.execute(text(f"SET FOREIGN_KEY_CHECKS = 1"))
         conn.commit()
     info(f"Load encounter completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 

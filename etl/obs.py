@@ -67,23 +67,23 @@ def load_obs(resume=False):
     target_engine = get_target_engine()
     select_insert_sql = """
     INSERT IGNORE INTO obs (
-    obs_id, person_id, concept_id, encounter_id, order_id, obs_datetime, location_id,
-    obs_group_id, accession_number, value_group_id, value_coded,
-    value_coded_name_id, value_drug, value_datetime, value_numeric, value_modifier,
-    value_text, value_complex, comments, creator, date_created, voided, voided_by,
-    date_voided, void_reason, uuid
+        obs_id, person_id, concept_id, encounter_id, order_id, obs_datetime, location_id,
+        obs_group_id, accession_number, value_group_id, value_coded,
+        value_coded_name_id, value_drug, value_datetime, value_numeric, value_modifier,
+        value_text, value_complex, comments, creator, date_created, voided, voided_by,
+        date_voided, void_reason, uuid
     )
     SELECT
-    obs_id, person_id, concept_id, encounter_id, order_id, obs_datetime, location_id,
-    obs_group_id, accession_number, value_group_id,
-    CASE
-        WHEN value_boolean = 1 THEN 1
-        WHEN value_boolean = 0 THEN 0
-        ELSE value_coded
-    END,
-    value_coded_name_id, value_drug, value_datetime, value_numeric, 
-    value_modifier, value_text, value_complex, comments, creator, date_created, 
-    voided, voided_by, date_voided, void_reason, uuid
+        obs_id, person_id, concept_id, encounter_id, order_id, obs_datetime, location_id,
+        obs_group_id, accession_number, value_group_id,
+        CASE
+            WHEN value_boolean = 1 THEN 1
+            WHEN value_boolean = 0 THEN 0
+            ELSE value_coded
+        END,
+        value_coded_name_id, value_drug, value_datetime, value_numeric, 
+        value_modifier, value_text, value_complex, comments, creator, date_created, 
+        voided, voided_by, date_voided, void_reason, uuid
     FROM _obs
     WHERE date_created <= CURRENT_DATE()
       AND date_created >= :year_start
@@ -92,7 +92,7 @@ def load_obs(resume=False):
 
     with target_engine.connect() as conn:
         info("Loading data for obs table...")
-        date_bounds_sql = text("SELECT DATE(MIN(date_created)) AS first_date, CURRENT_DATE() AS current_date FROM _obs WHERE date_created <= CURRENT_DATE()")
+        date_bounds_sql = text("SELECT DATE(MIN(date_created)) AS first_date, CURRENT_TIMESTAMP() AS current FROM _obs WHERE date_created <= CURRENT_DATE()")
         date_bounds = conn.execute(date_bounds_sql).fetchone()
         first_date = date_bounds[0] if date_bounds and date_bounds[0] is not None else None
         current_date = date_bounds[1] if date_bounds and date_bounds[1] is not None else date.today()
