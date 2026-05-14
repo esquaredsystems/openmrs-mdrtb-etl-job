@@ -52,6 +52,11 @@ def get_concept_source_data():
     df = read_excel_sheet('concept_mapping.xlsx', 'concept_source')
     return df
 
+def get_concept_set_data():
+    # Expected columns: concept_set_id	concept_id	concept_set	sort_weight	creator	date_created	uuid
+    df = read_excel_sheet('concept_mapping.xlsx', 'concept_set')
+    return df
+
 def get_global_property_data():
     # Expected columns: source	property	property_value	description	uuid
     df = read_excel_sheet('global_properties.xlsx', 'live')

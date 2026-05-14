@@ -2,23 +2,22 @@ import time
 
 import numpy as np
 import pandas as pd
-from sqlalchemy import text
 
-from config.database import get_source_engine, get_target_engine
+from config.database import get_target_engine
 from models.schema_models import *
-from utils.helpers import read_excel_sheet
+from utils.helpers import get_location_data
 from utils.logger import info, warning
+
 
 ##### Extraction functions #####
 def extract_location(drop_create=False):
-    source_engine = get_source_engine()
     target_engine = get_target_engine()
     if drop_create:
         create_location_table(target_engine, drop_create=drop_create)
     info("Fetching data from locations.xlsx location sheet...")
 
     # Read from Excel
-    df = read_excel_sheet('locations.xlsx', 'locations')
+    df = get_location_data()
     if not df.empty:
         # Truncate the target table
         with target_engine.connect() as target_conn:

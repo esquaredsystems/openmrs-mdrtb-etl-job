@@ -1,10 +1,9 @@
 import time
 
-from sqlalchemy import text
-
 from config.database import get_source_engine, get_target_engine
 from models.schema_models import *
 from utils.logger import info, warning
+
 
 ##### Extraction functions #####
 def extract_address_hierarchy_level(drop_create=False):

@@ -6,6 +6,7 @@ from config.database import get_source_engine, get_target_engine
 from models.schema_models import *
 from utils.logger import info, warning
 
+
 ##### Extraction functions #####
 def extract_obs(drop_create=False, resume=False):
     source_engine = get_source_engine()

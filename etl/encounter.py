@@ -1,7 +1,5 @@
 import time
 
-from sqlalchemy import text
-
 from config.config import BATCH_SIZE
 from config.database import get_source_engine, get_target_engine
 from models.schema_models import *

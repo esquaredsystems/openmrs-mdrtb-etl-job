@@ -3,11 +3,11 @@ from uuid import uuid4
 
 import numpy as np
 import pandas as pd
-from sqlalchemy import text
 
 from config.database import get_source_engine, get_target_engine
 from models.schema_models import *
-from utils.helpers import read_excel_sheet
+from utils.helpers import (get_concept_data, get_concept_map_data,
+                           get_concept_name_data, get_concept_source_data, get_concept_set_data)
 from utils.logger import info, warning
 
 
@@ -17,7 +17,7 @@ def extract_concept(drop_create=False):
     if drop_create:
         create_concept_table(target_engine, drop_create=drop_create)
 
-    df = read_excel_sheet('concept_mapping.xlsx', 'concept')
+    df = get_concept_data()
     if not df.empty:
         with target_engine.connect() as target_conn:
             target_conn.execute(text("TRUNCATE TABLE _concept"))
@@ -192,7 +192,7 @@ def extract_concept_map(drop_create=False):
     if drop_create:
         create_concept_map_table(target_engine, drop_create=drop_create)
 
-    df = read_excel_sheet('concept_mapping.xlsx', 'concept_map')
+    df = get_concept_map_data()
     if not df.empty:
         with target_engine.connect() as target_conn:
             target_conn.execute(text("TRUNCATE TABLE _concept_map"))
@@ -221,7 +221,7 @@ def extract_concept_name(drop_create=False):
     if drop_create:
         create_concept_name_table(target_engine, drop_create=drop_create)
 
-    df = read_excel_sheet('concept_mapping.xlsx', 'concept_name')
+    df = get_concept_name_data()
     df = df.where(pd.notna(df), None)
     if not df.empty:
         with target_engine.connect() as target_conn:
@@ -345,7 +345,7 @@ def extract_concept_reference_source(drop_create=False):
     if drop_create:
         create_concept_reference_source_table(target_engine, drop_create=drop_create)
 
-    df = read_excel_sheet('concept_mapping.xlsx', 'concept_source')
+    df = get_concept_source_data()
     if not df.empty:
         with target_engine.connect() as target_conn:
             target_conn.execute(text("TRUNCATE TABLE _concept_reference_source"))
@@ -374,7 +374,7 @@ def extract_concept_set(drop_create=False):
     if drop_create:
         create_concept_set_table(target_engine, drop_create=drop_create)
 
-    df = read_excel_sheet('concept_mapping.xlsx', 'concept_set')
+    df = get_concept_set_data()
     if not df.empty:
         with target_engine.connect() as target_conn:
             target_conn.execute(text("TRUNCATE TABLE _concept_set"))
