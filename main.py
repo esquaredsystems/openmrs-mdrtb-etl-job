@@ -1,9 +1,4 @@
 import argparse
-import time
-
-from sqlalchemy import text
-
-from config.database import get_source_engine, get_target_engine, set_foreign_key_checks
 from etl.address_hierarchy import *
 from etl.cohort import *
 from etl.concept import *
@@ -11,6 +6,7 @@ from etl.drug import *
 from etl.encounter import *
 from etl.form import *
 from etl.hl7 import *
+from etl.lab import *
 from etl.location import *
 from etl.misc import *
 from etl.obs import *
@@ -19,24 +15,30 @@ from etl.patient import *
 from etl.program import *
 from etl.report import *
 from etl.user import *
-from models.text_columns import text_columns
 from utils.logger import info
 
 
-def pre_etl_job():
+def pre_etl_job(database_name="openmrs_28"):
     target_engine = get_target_engine()
     with target_engine.connect() as conn:
+        conn.execute(text(f"SET FOREIGN_KEY_CHECKS = 0"))
+        conn.commit()
         # Make sure all text columns are utf8mb4
-        select_query = """
+        select_query = f"""
         select concat('ALTER TABLE ', c.TABLE_NAME, ' MODIFY COLUMN ', c.COLUMN_NAME, ' ', c.COLUMN_TYPE, ' CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;') as q from information_schema.`COLUMNS` c
-        where c.TABLE_SCHEMA = 'openmrs_28' and c.DATA_TYPE in ('char', 'text', 'varchar') and c.COLUMN_NAME <> 'uuid' and c.CHARACTER_SET_NAME <> 'utf8mb4'
+        where c.TABLE_SCHEMA = '{database_name}' and c.DATA_TYPE in ('char', 'text', 'varchar') and c.COLUMN_NAME <> 'uuid' and c.CHARACTER_SET_NAME <> 'utf8mb4'
         """
-        result = conn.execute(text(select_query))
-        for row in result:
-            alter_query = row[0]
-            info(f"Executing query: {alter_query}")
-            conn.execute(text(alter_query))
-            conn.commit()
+        queries = conn.execute(text(select_query))
+        for query in queries:
+            try:
+                alter_query = query[0]
+                info(f"Executing query: {alter_query}")
+                conn.execute(text(alter_query))
+                conn.commit()
+            except Exception as e:
+                warning(f"Error executing query: {e}")
+        conn.execute(text(f"SET FOREIGN_KEY_CHECKS = 1"))
+        conn.commit()
     info("Pre-ETL job completed successfully")
 
 
@@ -65,7 +67,7 @@ def run_transform_job():
     transform_encounter_group()
     transform_concept_group()
     transform_drug_group()
-
+    transform_lab_group()
     info(f"Transformation job completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
 
@@ -86,6 +88,7 @@ def run_load_job():
     load_encounter_group()
     load_obs_group()
     load_orders_group()
+    load_lab_group()
     info(f"Load job completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
 
@@ -122,7 +125,7 @@ if __name__ == "__main__":
         assert result.scalar() == 1, "Connection to target database failed"
         info("Target connection successful")
 
-    pre_etl_job()
+    # pre_etl_job()
 
     if args.extract:
         run_extract_job(hard_reset=args.hard_reset)
@@ -131,8 +134,10 @@ if __name__ == "__main__":
         run_transform_job()
 
     if args.load:
-        set_foreign_key_checks(target, False)
         run_load_job()
-        set_foreign_key_checks(target, True)
 
-    post_etl_job()
+    extract_labtest_attribute_type(True)
+    load_lab_group()
+    transform_lab_group()
+
+    # post_etl_job()

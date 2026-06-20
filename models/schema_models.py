@@ -40,6 +40,24 @@ def create_cohort_table(engine, drop_create=False):
         conn.commit()
 
 
+def create_labtest_type_table(engine, drop_create=False):
+    with engine.connect() as conn:
+        if drop_create:
+            conn.execute(text("DROP TABLE IF EXISTS _labtest_type"))
+        create_query = "CREATE TABLE _labtest_type (test_type_id int(11) NOT NULL, name varchar(255) NOT NULL, short_name varchar(20) NULL, test_group varchar(20) NOT NULL, requires_specimen tinyint(1) NOT NULL, reference_concept_id int(11) NOT NULL, description text NOT NULL, creator int(11) NOT NULL, date_created datetime NOT NULL, changed_by int(11) NULL, date_changed datetime DEFAULT NULL, retired tinyint(1) NOT NULL, retired_by int(11) NULL, date_retired datetime NULL, retire_reason varchar(255) NULL, uuid char(38) NOT NULL, PRIMARY KEY (test_type_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        conn.execute(text(create_query))
+        conn.commit()
+
+
+def create_labtest_attribute_type_table(engine, drop_create=False):
+    with engine.connect() as conn:
+        if drop_create:
+            conn.execute(text("DROP TABLE IF EXISTS _labtest_attribute_type"))
+        create_query = "CREATE TABLE _labtest_attribute_type (test_attribute_type_id int(11) NOT NULL, test_type_id int(11) NOT NULL, name varchar(255) NOT NULL, datatype varchar(255) NOT NULL, min_occurs int(11) NOT NULL, max_occurs int(11) NULL, datatype_config text, handler_config text, sort_weight double NULL, description text, creator int(11) NOT NULL, date_created datetime NOT NULL, changed_by int(11) NULL, date_changed datetime NULL, retired tinyint(1) NOT NULL, retired_by int(11) NULL, date_retired datetime NULL, retire_reason varchar(255) NULL, uuid char(38) NOT NULL, preferred_handler varchar(255) NULL, hint varchar(1024) NULL, group_name varchar(255) NULL, multiset_name varchar(255) NULL, PRIMARY KEY (test_attribute_type_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        conn.execute(text(create_query))
+        conn.commit()
+
+
 def create_concept_answer_table(engine, drop_create=False):
     with engine.connect() as conn:
         if drop_create:

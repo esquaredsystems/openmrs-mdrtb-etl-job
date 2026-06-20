@@ -145,8 +145,13 @@ def extract_concept_datatype(drop_create=False):
             "INSERT INTO _concept_datatype (concept_datatype_id, name, hl7_abbreviation, description, creator, date_created, retired, retired_by, date_retired, retire_reason, uuid) VALUES (:concept_datatype_id, :name, :hl7_abbreviation, :description, :creator, :date_created, :retired, :retired_by, :date_retired, :retire_reason, :uuid)")
         with target_engine.connect() as target_conn:
             for row in source_data:
+                # Note! This is done because in the source table, concept_datatype_id=9 does not exist
+                concept_datatype_id = row.concept_datatype_id
+                if concept_datatype_id >= 10:
+                    concept_datatype_id -= 1
+
                 target_conn.execute(insert_query, {
-                    "concept_datatype_id": row.concept_datatype_id, "name": row.name,
+                    "concept_datatype_id": concept_datatype_id, "name": row.name,
                     "hl7_abbreviation": row.hl7_abbreviation, "description": row.description, "creator": row.creator,
                     "date_created": row.date_created, "retired": row.retired, "retired_by": row.retired_by,
                     "date_retired": row.date_retired, "retire_reason": row.retire_reason, "uuid": row.uuid
@@ -592,7 +597,7 @@ def load_concept_name():
         info("Loading data for concept_name table...")
         # Run UPSERT
         upsert_sql = """
-        INSERT INTO concept_name (concept_name_id, concept_id, name, locale, locale_preferred, creator, date_created, concept_name_type, voided, voided_by, date_voided, void_reason, uuid)
+        INSERT IGNORE INTO concept_name (concept_name_id, concept_id, name, locale, locale_preferred, creator, date_created, concept_name_type, voided, voided_by, date_voided, void_reason, uuid)
         SELECT concept_name_id, concept_id, name, locale, locale_preferred, creator, date_created, concept_name_type, voided, voided_by, date_voided, void_reason, uuid FROM _concept_name
         ON DUPLICATE KEY UPDATE concept_id = VALUES(concept_id), name = VALUES(name), locale = VALUES(locale), locale_preferred = VALUES(locale_preferred), creator = VALUES(creator), date_created = VALUES(date_created), concept_name_type = VALUES(concept_name_type), voided = VALUES(voided), voided_by = VALUES(voided_by), date_voided = VALUES(date_voided), void_reason = VALUES(void_reason)
         """

@@ -257,6 +257,15 @@ def load_role_privilege():
         info("Loading data for role_privilege table...")
         conn.execute(text(select_insert_sql))
         conn.commit()
+    # Ensure that the 'System Developer' role has all privileges
+    select_insert_sql = """
+        INSERT IGNORE INTO role_privilege (role, privilege)
+        SELECT 'System Developer', privilege FROM privilege
+        """
+    with target_engine.connect() as conn:
+        info("Loading data for role_privilege table...")
+        conn.execute(text(select_insert_sql))
+        conn.commit()
     info(f"Load role_privilege completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
 def load_users():
@@ -267,8 +276,12 @@ def load_users():
     SELECT user_id, system_id, username, password, salt, secret_question, secret_answer, creator, date_created, changed_by, date_changed, person_id, retired, retired_by, date_retired, retire_reason, uuid FROM _users
     """
     with target_engine.connect() as conn:
+        conn.execute(text(f"SET FOREIGN_KEY_CHECKS = 0"))
+        conn.commit()
         info("Loading data for users table...")
         conn.execute(text(select_insert_sql))
+        conn.commit()
+        conn.execute(text(f"SET FOREIGN_KEY_CHECKS = 1"))
         conn.commit()
     info(f"Load users completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 

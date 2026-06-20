@@ -22,12 +22,12 @@ def read_excel_sheet(filename, sheet_name):
         warning(f"Error reading {filename}: {e}")
         return pd.DataFrame()
 
-def get_commonlab_test_type_data():
+def get_labtest_type_data():
     # Expected columns: type_id	name	description	test_group	short_name	requires_specimen	reference_concept_id	uuid
     df = read_excel_sheet('commonlab.xlsx', 'test_types')
     return df
 
-def get_commonlab_attribute_type_data():
+def get_labtest_attribute_type_data():
     # Expected columns: test_attribute_type_id	test_type_id	name	datatype_config	sort_weight	description	preferred_handler	hint	group_name	multiset_name	creator	date_created	retired	uuid
     df = read_excel_sheet('commonlab.xlsx', 'attribute_types')
     return df

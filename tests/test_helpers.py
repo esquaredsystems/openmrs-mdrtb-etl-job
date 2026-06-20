@@ -5,8 +5,8 @@ import pandas as pd
 import pytest
 from utils.helpers import (
     read_excel_sheet,
-    get_commonlab_test_type_data,
-    get_commonlab_attribute_type_data,
+    get_labtest_type_data,
+    get_labtest_attribute_type_data,
     get_concept_data,
     get_concept_map_data,
     get_concept_name_data,
@@ -73,14 +73,14 @@ def test_read_excel_sheet_nonexistent_file():
 
 def test_get_commonlab_test_type_data():
     """Test get_commonlab_test_type_data returns expected columns."""
-    df = get_commonlab_test_type_data()
+    df = get_labtest_type_data()
     expected_columns = ["type_id", "name", "description", "test_group", "short_name", "requires_specimen", "reference_concept_id", "uuid"]
     for col in expected_columns:
         assert col in df.columns
 
 def test_get_commonlab_attribute_type_data():
     """Test get_commonlab_attribute_type_data returns expected columns."""
-    df = get_commonlab_attribute_type_data()
+    df = get_labtest_attribute_type_data()
     expected_columns = ["test_attribute_type_id", "test_type_id", "name", "datatype_config", "sort_weight", "description", "preferred_handler", "hint", "group_name", "multiset_name", "creator", "date_created", "retired", "uuid"]
     for col in expected_columns:
         assert col in df.columns

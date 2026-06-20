@@ -78,14 +78,14 @@ def extract_orders_group(drop_create):
     info("Order type table created successfully")
     info(f"Extraction completed in {time.time() - start_time:.2f} seconds")
 
+
 ##### Loading functions #####
 def load_order_type():
     start_time = time.time()
     target_engine = get_target_engine()
     select_insert_sql = """
-    INSERT IGNORE INTO order_type (order_type_id, name, description, creator, date_created, retired, retired_by, date_retired, retire_reason, uuid)
-    SELECT order_type_id, name, description, creator, date_created, retired, retired_by, date_retired, retire_reason, uuid
-    FROM _order_type
+        INSERT IGNORE INTO order_type (order_type_id, name, description, creator, date_created, retired, retired_by, date_retired, retire_reason, uuid)
+        SELECT order_type_id, name, description, 1, date_created, retired, retired_by, date_retired, retire_reason, uuid FROM _order_type
     """
     with target_engine.connect() as conn:
         info("Loading data for order_type table...")
@@ -97,29 +97,46 @@ def load_order_type():
 def load_order():
     start_time = time.time()
     target_engine = get_target_engine()
-    select_insert_sql = """
-    INSERT INTO orders (
-        order_id, order_type_id, concept_id, orderer, encounter_id, instructions, 
-        date_activated, auto_expire_date, date_stopped,
-        order_reason, order_reason_non_coded, 
-        creator, date_created, voided, voided_by, date_voided, void_reason, patient_id,
-        accession_number, uuid, urgency, order_number, order_action, care_setting
-    )
-    SELECT
-        o.order_id, o.order_type_id, o.concept_id, COALESCE(p.provider_id, o.orderer) AS orderer, o.encounter_id, o.instructions,
-        o.start_date AS date_activated, o.auto_expire_date, o.discontinued_date AS date_stopped,
-        o.discontinued_reason AS order_reason, o.discontinued_reason_non_coded AS order_reason_non_coded,
-        o.creator, o.date_created, o.voided, o.voided_by, o.date_voided, o.void_reason, o.patient_id,
-        o.accession_number, o.uuid, 'ROUTINE' AS urgency, CONCAT('ORD-', o.order_id) AS order_number,
-        (CASE WHEN o.discontinued = 1 THEN 'DISCONTINUE' ELSE 'NEW' END) AS order_action,
-        COALESCE((SELECT MIN(care_setting_id) FROM care_setting), 1) AS care_setting
-    FROM _orders o
-    LEFT JOIN users u ON u.user_id = o.orderer
-    LEFT JOIN provider p ON p.person_id = u.person_id AND p.retired = 0
+    truncate_orders_sql = "TRUNCATE orders"
+    insert_seed_order_sql = """
+        INSERT INTO orders (
+            order_type_id, concept_id, orderer, encounter_id, instructions, date_activated, auto_expire_date, date_stopped, order_reason, order_reason_non_coded, creator, date_created, voided, voided_by, date_voided, void_reason, patient_id, accession_number, uuid, urgency, order_number, previous_order_id, order_action, comment_to_fulfiller, care_setting, scheduled_date, order_group_id, sort_weight, fulfiller_comment, fulfiller_status
+        ) VALUES (
+            1, 410, 3, 147521, NULL, '2017-05-04 00:00:00', NULL, NULL, NULL, NULL, 1, '2023-04-09 07:33:26', 0, NULL, NULL, NULL, 32072, NULL, '90ef1459-8b33-4a18-936e-2cfdfbe99649', 'ROUTINE', 'ORD-1', NULL, 'NEW', NULL, 1, NULL, NULL, NULL, NULL, NULL
+        )
+    """
+    insert_encounter_orders_sql = """
+        INSERT INTO orders (
+            order_type_id, concept_id, orderer, encounter_id, date_activated, creator, date_created, voided, voided_by, date_voided, void_reason, patient_id, uuid, urgency, order_number, order_action, care_setting
+        )
+        SELECT 3 AS order_type_id, cn.concept_id, p.provider_id AS orderer, e.encounter_id, e.encounter_datetime, e.creator, e.date_created, e.voided, e.voided_by, e.date_voided, e.voided_by, e.patient_id, UUID(), 'ROUTINE' AS urgency, CONCAT('ORD-', e.encounter_id) AS order_number, 'NEW' AS order_action, 1 AS care_setting FROM encounter AS e
+        INNER JOIN users u ON u.user_id = e.creator
+        INNER JOIN patient pt ON pt.patient_id = e.patient_id
+        INNER JOIN provider p ON p.person_id = u.person_id
+        INNER JOIN concept_name cn ON cn.name = 'MICROSCOPY TEST CONSTRUCT' AND cn.locale = 'en' AND cn.concept_name_type = 'FULLY_SPECIFIED' AND cn.voided = 0
+        WHERE e.encounter_type IN (5, 11)
+    """
+    update_orders_creator_sql = """
+        UPDATE orders
+        SET creator = 1
+        WHERE creator NOT IN (SELECT user_id FROM users)
+    """
+    update_orders_voided_by_sql = """
+        UPDATE orders
+        SET voided_by = 1
+        WHERE voided_by IS NOT NULL AND voided_by NOT IN (SELECT user_id FROM users)
     """
     with target_engine.connect() as conn:
         info("Loading data for orders table...")
-        conn.execute(text(select_insert_sql))
+        conn.execute(text(f"SET FOREIGN_KEY_CHECKS = 0"))
+        conn.execute(text(truncate_orders_sql))
+        conn.execute(text(f"SET FOREIGN_KEY_CHECKS = 1"))
+        conn.commit()
+
+        conn.execute(text(insert_seed_order_sql))
+        conn.execute(text(insert_encounter_orders_sql))
+        conn.execute(text(update_orders_creator_sql))
+        conn.execute(text(update_orders_voided_by_sql))
         conn.commit()
     info(f"Load orders completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
@@ -129,4 +146,3 @@ def load_orders_group():
     load_order_type()
     load_order()
     info(f"Load orders group completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
-
