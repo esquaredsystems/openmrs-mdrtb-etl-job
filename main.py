@@ -59,6 +59,7 @@ def run_extract_job(hard_reset=False):
     extract_patient_group(hard_reset)
     extract_encounter_group(hard_reset)
     extract_obs_group(hard_reset)
+    extract_encounter_results(hard_reset)
     info(f"Extraction job completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
 
@@ -136,8 +137,6 @@ if __name__ == "__main__":
     if args.load:
         run_load_job()
 
-    extract_labtest_attribute_type(True)
-    load_lab_group()
     transform_lab_group()
 
     # post_etl_job()

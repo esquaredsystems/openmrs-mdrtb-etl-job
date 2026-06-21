@@ -238,6 +238,15 @@ def create_encounter_provider_table(engine, drop_create=False):
         conn.commit()
 
 
+def create_encounter_results_table(engine, drop_create=False):
+    with engine.connect() as conn:
+        if drop_create:
+            conn.execute(text("DROP TABLE IF EXISTS _encounter_results"))
+        create_query = "CREATE TABLE _encounter_results (encounter_id INT(10) NOT NULL, person_id INT(10) NOT NULL, obs_id INT(10) NOT NULL, obs_group_id INT(10) NULL, parent_concept VARCHAR(255), obs_datetime DATETIME, concept_id INT(10), question VARCHAR(255), value_numeric DOUBLE, value_text TEXT, value_datetime DATETIME, value_coded INT(10), answer VARCHAR(255), location_id INT(10), creator INT(10) NOT NULL, date_created DATETIME, voided TINYINT(1) DEFAULT 0, voided_by INT(10), date_voided DATETIME, void_reason VARCHAR(255)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        conn.execute(text(create_query))
+        conn.commit()
+
+
 def create_encounter_table(engine, drop_create=False):
     with engine.connect() as conn:
         if drop_create:

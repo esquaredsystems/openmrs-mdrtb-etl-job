@@ -361,6 +361,29 @@ PRIMARY KEY (encounter_provider_id),
 UNIQUE KEY _encounter_provider_unique (encounter_id,provider_id)
 );
 
+CREATE TABLE _encounter_results (
+encounter_id int(10) INT NOT NULL,
+person_id int(10) INT NOT NULL,
+obs_id int(10) INT NOT NULL,
+obs_group_id int(10) INT NULL,
+parent_concept VARCHAR(255),
+obs_datetime DATETIME,
+concept_id int(10) INT,
+question VARCHAR(255),
+value_numeric DOUBLE,
+value_text TEXT,
+value_datetime DATETIME,
+value_coded int(10) INT,
+answer VARCHAR(255),
+location_id int(10) INT,
+creator int(10) INT NOT NULL,
+date_created DATETIME,
+voided TINYINT(1) DEFAULT 0,
+voided_by int(10) INT,
+date_voided DATETIME,
+void_reason VARCHAR(255)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE _encounter_type (
 encounter_type_id int(10) NOT NULL,
 name varchar(50) NOT NULL,
