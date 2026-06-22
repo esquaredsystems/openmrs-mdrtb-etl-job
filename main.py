@@ -97,10 +97,12 @@ def post_etl_job():
     # Placeholder for any post-ETL tasks like cleanup, indexing, etc.
     # Update location IDs for obsolete location
     with get_target_engine().connect() as conn:
-        conn.execute(text("update encounter set location_id = 214 where location_id = 205;"))
-        conn.execute(text("update obs set location_id = 214 where location_id = 205;"))
-        conn.execute(text("update patient_identifier set location_id = 214 where location_id = 205;"))
-        conn.execute(text("update patient_program set location_id = 214 where location_id = 205;"))
+        conn.execute(text("UPDATE encounter SET location_id = 214 WHERE location_id = 205;"))
+        conn.execute(text("UPDATE obs SET location_id = 214 WHERE location_id = 205;"))
+        conn.execute(text("UPDATE patient_identifier SET location_id = 214 WHERE location_id = 205;"))
+        conn.execute(text("UPDATE patient_program SET location_id = 214 WHERE location_id = 205;"))
+        # CRITICAL! These are the privileges that are required for anonymous users to be able to successfully login
+        conn.execute(text("INSERT IGNORE INTO role_privilege (role, privilege) VALUES ('Anonymous', 'View Concepts'), ('Anonymous', 'View Locations'), ('Anonymous', 'Get Global Properties');"))
         conn.commit()
 
 
@@ -126,7 +128,7 @@ if __name__ == "__main__":
         assert result.scalar() == 1, "Connection to target database failed"
         info("Target connection successful")
 
-    # pre_etl_job()
+    pre_etl_job()
 
     if args.extract:
         run_extract_job(hard_reset=args.hard_reset)
@@ -137,6 +139,4 @@ if __name__ == "__main__":
     if args.load:
         run_load_job()
 
-    transform_lab_group()
-
-    # post_etl_job()
+    post_etl_job()
