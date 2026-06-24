@@ -19,6 +19,10 @@ from utils.logger import info
 
 
 def pre_etl_job(database_name="openmrs_28"):
+    """
+    Perform pre-ETL tasks including disabling foreign key checks and ensuring all 
+    text columns in the target database use the utf8mb4 character set.
+    """
     target_engine = get_target_engine()
     with target_engine.connect() as conn:
         conn.execute(text(f"SET FOREIGN_KEY_CHECKS = 0"))
@@ -43,6 +47,10 @@ def pre_etl_job(database_name="openmrs_28"):
 
 
 def run_extract_job(hard_reset=False):
+    """
+    Execute the data extraction phase of the ETL job.
+    Calls individual extraction functions for various data groups.
+    """
     start_time = time.time()
     extract_address_hierarchy_group(hard_reset)
     extract_cohort_group(hard_reset)
@@ -64,6 +72,10 @@ def run_extract_job(hard_reset=False):
 
 
 def run_transform_job():
+    """
+    Execute the data transformation phase of the ETL job.
+    Processes the extracted data to prepare it for loading.
+    """
     start_time = time.time()
     transform_encounter_group()
     transform_concept_group()
@@ -73,6 +85,10 @@ def run_transform_job():
 
 
 def run_load_job():
+    """
+    Execute the data loading phase of the ETL job.
+    Loads the transformed data into the target database in the correct order.
+    """
     start_time = time.time()
     load_user_group()
     load_address_hierarchy_group()
@@ -94,6 +110,10 @@ def run_load_job():
 
 
 def post_etl_job():
+    """
+    Perform post-ETL tasks such as data cleanup, fixing obsolete location IDs,
+    and ensuring necessary privileges for anonymous users are set.
+    """
     # Placeholder for any post-ETL tasks like cleanup, indexing, etc.
     # Update location IDs for obsolete location
     with get_target_engine().connect() as conn:
