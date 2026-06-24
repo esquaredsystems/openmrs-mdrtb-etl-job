@@ -182,38 +182,63 @@ def load_encounter_type():
 def load_encounter():
     start_time = time.time()
     target_engine = get_target_engine()
+    info("Loading data for encounter table...")
     with target_engine.connect() as conn:
-        info("Loading data for encounter table...")
         # INSERT IGNORE for records with date_created NOT in current year
-        conn.execute(text("""
-            INSERT IGNORE INTO encounter (encounter_id, encounter_type, patient_id, location_id, form_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid)
-            SELECT encounter_id, encounter_type, patient_id, location_id, form_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid FROM _encounter
-            WHERE YEAR(date_created) < YEAR(CURRENT_TIMESTAMP())
-        """))
-        conn.commit()
+        total_old = conn.execute(text("SELECT COUNT(*) FROM _encounter WHERE YEAR(date_created) < YEAR(CURRENT_TIMESTAMP())")).scalar()
+        offset = 0
+        batch_number = 1
+        while offset < total_old:
+            conn.execute(text("""
+                INSERT IGNORE INTO encounter (encounter_id, encounter_type, patient_id, location_id, form_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid)
+                SELECT encounter_id, encounter_type, patient_id, location_id, form_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid
+                FROM _encounter
+                WHERE YEAR(date_created) < YEAR(CURRENT_TIMESTAMP())
+                ORDER BY encounter_id
+                LIMIT :limit OFFSET :offset
+            """), {"limit": BATCH_SIZE, "offset": offset})
+            conn.commit()
+            info(f"[historical] Batch {batch_number}: inserted up to {min(offset + BATCH_SIZE, total_old)} of {total_old} records")
+            offset += BATCH_SIZE
+            batch_number += 1
+
         # UPSERT for records with date_created in current year (but do NOT reset uuid)
-        conn.execute(text(f"SET FOREIGN_KEY_CHECKS = 0"))
+        total_current = conn.execute(text("SELECT COUNT(*) FROM _encounter WHERE YEAR(date_created) >= YEAR(CURRENT_TIMESTAMP())")).scalar()
+        conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
         conn.commit()
-        conn.execute(text("""
-            INSERT INTO encounter (encounter_id, encounter_type, patient_id, location_id, form_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid)
-            SELECT encounter_id, encounter_type, patient_id, location_id, form_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid FROM _encounter
-            WHERE YEAR(date_created) >= YEAR(CURRENT_TIMESTAMP())
-            ON DUPLICATE KEY UPDATE
-                encounter_type = VALUES(encounter_type),
-                patient_id = VALUES(patient_id),
-                location_id = VALUES(location_id),
-                form_id = VALUES(form_id),
-                encounter_datetime = VALUES(encounter_datetime),
-                creator = VALUES(creator),
-                date_created = VALUES(date_created),
-                voided = VALUES(voided),
-                voided_by = VALUES(voided_by),
-                date_voided = VALUES(date_voided),
-                void_reason = VALUES(void_reason),
-                changed_by = VALUES(changed_by),
-                date_changed = VALUES(date_changed)
-        """))
-        conn.execute(text(f"SET FOREIGN_KEY_CHECKS = 1"))
+        offset = 0
+        batch_number = 1
+        while offset < total_current:
+            conn.execute(text("""
+                INSERT INTO encounter (encounter_id, encounter_type, patient_id, location_id, form_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid)
+                SELECT encounter_id, encounter_type, patient_id, location_id, form_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid
+                FROM (
+                    SELECT encounter_id, encounter_type, patient_id, location_id, form_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid
+                    FROM _encounter
+                    WHERE YEAR(date_created) >= YEAR(CURRENT_TIMESTAMP())
+                    ORDER BY encounter_id
+                    LIMIT :limit OFFSET :offset
+                ) batch
+                ON DUPLICATE KEY UPDATE
+                    encounter_type = VALUES(encounter_type),
+                    patient_id = VALUES(patient_id),
+                    location_id = VALUES(location_id),
+                    form_id = VALUES(form_id),
+                    encounter_datetime = VALUES(encounter_datetime),
+                    creator = VALUES(creator),
+                    date_created = VALUES(date_created),
+                    voided = VALUES(voided),
+                    voided_by = VALUES(voided_by),
+                    date_voided = VALUES(date_voided),
+                    void_reason = VALUES(void_reason),
+                    changed_by = VALUES(changed_by),
+                    date_changed = VALUES(date_changed)
+            """), {"limit": BATCH_SIZE, "offset": offset})
+            conn.commit()
+            info(f"[current year] Batch {batch_number}: upserted up to {min(offset + BATCH_SIZE, total_current)} of {total_current} records")
+            offset += BATCH_SIZE
+            batch_number += 1
+        conn.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
         conn.commit()
     info(f"Load encounter completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
