@@ -101,6 +101,12 @@ def extract_encounter_results(drop_create=False):
         info("Import completed successfully.")
 
 
+def extract_lab_group(drop_create=False):
+    extract_labtest_type(drop_create=drop_create)
+    extract_labtest_attribute_type(drop_create=drop_create)
+    extract_encounter_results(drop_create=drop_create)
+
+
 ##### Loading functions #####
 def load_labtest_type():
     start_time = time.time()

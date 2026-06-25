@@ -85,6 +85,8 @@ def load_location():
         f"INSERT IGNORE INTO location {columns} select l.location_id, l.name, l.description, 'Точикистон (Таджикистан)' as country, l.state_province, l.county_district, 1 as creator, l.date_created, l.retired, l.retired_by, l.date_retired, l.retire_reason, NULL, l.uuid from _location l where l.parent_location is null and l.parent_location not in (select location_id from location)",
         # Insert all retired locations without parent
         f"INSERT IGNORE INTO location {columns} select l.location_id, l.name, l.description, 'Точикистон (Таджикистан)' as country, l.state_province, l.county_district, 1 as creator, l.date_created, l.retired, l.retired_by, l.date_retired, l.retire_reason, NULL, l.uuid from _location l where l.parent_location is null and l.retired = 1",
+        # Insert all retired locations with parent
+        f"INSERT IGNORE INTO location {columns} select l.location_id, l.name, l.description, 'Точикистон (Таджикистан)' as country, l.state_province, l.county_district, 1 as creator, l.date_created, l.retired, l.retired_by, l.date_retired, l.retire_reason, NULL, l.uuid from _location l where l.parent_location is not null and l.retired = 1",
     ]
     with target_engine.connect() as conn:
         info("Loading data for location table...")

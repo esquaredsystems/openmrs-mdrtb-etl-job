@@ -69,7 +69,7 @@ def run_extract_job(hard_reset=False):
     extract_patient_group(hard_reset)
     extract_encounter_group(hard_reset)
     extract_obs_group(hard_reset)
-    extract_encounter_results(hard_reset)
+    extract_lab_group(hard_reset)
     info(f"Extraction job completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
 
@@ -96,10 +96,10 @@ def run_load_job():
     load_address_hierarchy_group()
     load_cohort_group()
     load_concept_group()
+    load_location_group()
     load_drug_group()
     load_form_group()
     load_hl7_group()
-    load_location_group()
     load_program_group()
     load_report_group()
     load_misc_group()
