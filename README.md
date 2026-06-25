@@ -5,12 +5,12 @@ This project is an ETL (Extract, Transform, Load) pipeline designed to migrate a
 ## Prerequisites
 
 - Python 3.12+
-- MySQL/MariaDB (Source and Target databases)
+- MySQL/MariaDB (source and target databases)
 - [Optional] Docker
 
 ## Configuration
 
-The application uses environment variables for configuration. You can create a `.env` file in the root directory based on the following required variables:
+The application uses environment variables for configuration. Create a `.env` file in the project root based on the variables below.
 
 ### Database Configuration
 
@@ -38,44 +38,45 @@ The application uses environment variables for configuration. You can create a `
 ### Local Setup
 
 1. Clone the repository.
-2. Install dependencies using pip:
+2. Create and activate a virtual environment:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate       # Linux/macOS
+   venv\Scripts\activate          # Windows
+   ```
+3. Install dependencies:
    ```bash
    pip install -r requirements.txt
-   ```
-   Or using Pipenv:
-   ```bash
-   pipenv install
    ```
 
 ### Docker Setup
 
-You can build the Docker image using:
+Build the Docker image:
 ```bash
 docker build -t openmrs-mdrtb-etl-job .
 ```
 
 ## Usage
 
-The ETL job is controlled via command-line arguments in `main.py`.
+The ETL job is controlled via command-line arguments in `main.py`. Run all commands from inside the `openmrs-mdrtb-etl-job/` directory.
 
 ### Running the Full Pipeline
 
-To run the complete extraction, transformation, and load process:
 ```bash
 python main.py --extract --transform --load
 ```
 
 ### Individual Steps
 
-You can run individual parts of the pipeline:
-
-- **Extraction only**: `python main.py --extract`
-- **Transformation only**: `python main.py --transform`
-- **Loading only**: `python main.py --load`
+| Step | Command |
+| --- | --- |
+| Extraction only | `python main.py --extract` |
+| Transformation only | `python main.py --transform` |
+| Loading only | `python main.py --load` |
 
 ### Hard Reset
 
-If you need to drop and recreate the tables in the target database before extraction, use the `--hard-reset` flag:
+Drop and recreate all tables in the target database before extraction:
 ```bash
 python main.py --extract --hard-reset
 ```
@@ -86,18 +87,70 @@ python main.py --extract --hard-reset
 docker run --env-file .env openmrs-mdrtb-etl-job
 ```
 
+## Testing
+
+Tests are located in the `tests/` directory. There are two suites:
+
+| Suite | File | Requires DB? | Description |
+| --- | --- | --- | --- |
+| Helper tests | `tests/test_helpers.py` | No | Unit tests for utility functions and Excel resource loading |
+| Migration tests | `tests/test_migration.py` | Yes (both DBs) | Validates row counts between source and target after migration |
+
+### Setup
+
+Install test dependencies (if not already installed via `requirements.txt`):
+```bash
+pip install pytest
+```
+
+### Running All Tests
+
+From inside the `openmrs-mdrtb-etl-job/` directory:
+```bash
+pytest
+```
+
+### Running Only Unit Tests (no DB required)
+
+```bash
+pytest tests/test_helpers.py
+```
+
+### Running Only Migration Validation Tests
+
+These tests connect to both the source and target databases using the same `.env` configuration as the main job. Make sure both databases are reachable before running.
+
+```bash
+pytest tests/test_migration.py
+```
+
+### What the Migration Tests Check
+
+- **`test_person_count`** — total row count in `person` matches within 0.1% tolerance
+- **`test_patient_count`** — total row count in `patient` matches within 0.1% tolerance
+- **`test_encounters_by_month_year`** — per-patient encounter counts match across both databases, grouped by month/year
+- **`test_obs_by_encounter_by_month_year`** — per-encounter observation counts match across both databases
+
+The tolerance threshold (0.1%) accounts for minor expected divergences (e.g., voided records). A test fails only if a count diverges beyond that threshold.
+
 ## Project Structure
 
-- `etl/`: Contains the logic for extracting, transforming, and loading various data entities (concepts, patients, encounters, etc.).
-- `models/`: Database schema definitions and SQL scripts.
-- `config/`: Database connection and application configuration.
-- `utils/`: Helper functions and logging utilities.
-- `resources/`: Static data and mappings (Excel files).
-- `main.py`: Entry point for the ETL job.
+```
+openmrs-mdrtb-etl-job/
+├── config/         # Database connection and app configuration
+├── etl/            # Extract, transform, and load logic per entity
+├── models/         # Database schema definitions
+├── resources/      # Static data and mappings (Excel files)
+├── tests/          # Test suite
+├── utils/          # Helpers and logging utilities
+├── main.py         # Entry point
+└── pytest.ini      # Pytest configuration (sets pythonpath for imports)
+```
 
 ## Data Entities Covered
 
-The pipeline handles various OpenMRS entities, including:
+The pipeline handles the following OpenMRS entities:
+
 - Address Hierarchy
 - Cohorts
 - Concepts and Drugs
