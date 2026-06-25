@@ -64,7 +64,7 @@ def get_global_property_data():
 
 def get_location_data():
     # Expected columns: location_id	name	level	parent_location	description	state_province	county_district	date_created	retired	retired_by	date_retired	retire_reason	uuid
-    df = read_excel_sheet('locations.xlsx', 'Locations')
+    df = read_excel_sheet('locations.xlsx', 'locations')
     return df
 
 def get_message_properties(language):
