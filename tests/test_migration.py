@@ -2,7 +2,7 @@ from sqlalchemy import text
 from tests.conftest import within_tolerance
 
 _MONTH_YEAR_QUERY = """
-    SELECT YEAR(date_created) AS yr, MONTH(date_created) AS mo, MAX(patient_id) AS patient_id
+    SELECT YEAR(date_created) AS yr, MONTH(date_created) AS mo, MIN(patient_id) AS patient_id
     FROM patient
     GROUP BY YEAR(date_created), MONTH(date_created)
     ORDER BY yr, mo
