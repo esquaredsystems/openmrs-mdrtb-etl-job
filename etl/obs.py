@@ -2,7 +2,7 @@ import time
 from datetime import date
 
 from config.config import BATCH_SIZE
-from config.database import get_source_engine, get_target_engine
+from config.database import get_source_engine, get_target_engine, set_foreign_key_checks
 from models.schema_models import *
 from utils.logger import info, warning
 
@@ -87,55 +87,45 @@ def load_obs(resume=False):
         voided, voided_by, date_voided, void_reason, uuid
     FROM _obs
     WHERE date_created <= CURRENT_DATE()
-      AND date_created >= :year_start
-      AND date_created < :year_end
+      AND date_created >= :date_start
+      AND date_created < :date_end
     """
 
     with target_engine.connect() as conn:
         info("Loading data for obs table...")
-        date_bounds_sql = text("SELECT DATE(MIN(date_created)) AS first_date, CURRENT_TIMESTAMP() AS current FROM _obs WHERE date_created <= CURRENT_DATE()")
-        date_bounds = conn.execute(date_bounds_sql).fetchone()
-        first_date = date_bounds[0] if date_bounds and date_bounds[0] is not None else None
-        current_date = date_bounds[1] if date_bounds and date_bounds[1] is not None else date.today()
+        current_year = date.today().year
 
-        if first_date is None:
-            warning("No data found in staging _obs table to load.")
-            return
-
-        start_date = first_date
         if resume:
-            fetch_latest_sql = text("SELECT DATE(COALESCE(MAX(date_created), '1900-01-01')) AS latest FROM obs WHERE date_created <= CURRENT_DATE()")
-            last_entry = conn.execute(fetch_latest_sql).fetchone()
-            last_date = last_entry[0] if last_entry and last_entry[0] is not None else "1900-01-01"
-            info(f"Resume enabled. Using latest target obs date_created: {last_date}")
+            start_year = current_year
+            info(f"Resume enabled. Loading obs from start of current year ({current_year}).")
+        else:
+            row = conn.execute(text("SELECT DATE(MIN(date_created)) FROM _obs WHERE date_created <= CURRENT_DATE()")).fetchone()
+            if row is None or row[0] is None:
+                warning("No data found in staging _obs table to load.")
+                return
+            start_year = row[0].year
+            info(f"Loading obs year-by-year from {start_year} to {current_year}.")
 
-            if isinstance(last_date, str):
-                last_date = date.fromisoformat(last_date)
-            start_date = max(first_date, last_date)
+        conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
+        try:
+            for year in range(start_year, current_year + 1):
+                date_start = date(year, 1, 1)
+                date_end = date(year + 1, 1, 1)
+                params = {
+                    "date_start": date_start,
+                    "date_end": date_end,
+                }
 
-        start_year = start_date.year
-        current_year = current_date.year
-        info(f"Loading obs year-by-year from {start_year} to {current_year}")
-
-        for year in range(start_year, current_year + 1):
-            year_start = date(year, 1, 1)
-            if year == start_year and start_date > year_start:
-                year_start = start_date
-
-            year_end = date(year + 1, 1, 1) if year < current_year else date(current_year + 1, 1, 1)
-            params = {
-                "year_start": year_start,
-                "year_end": year_end,
-            }
-
-            info(f"Loading obs records for year {year} (from {year_start} to {year_end})...")
-            conn.execute(text(select_insert_sql), params)
-            conn.commit()
+                info(f"Loading obs records for year {year} (from {date_start} to {date_end})...")
+                conn.execute(text(select_insert_sql), params)
+                conn.commit()
+        finally:
+            conn.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
 
     info(f"Load obs completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
 
-def load_obs_group():
+def load_obs_group(resume=False):
     start_time = time.time()
-    load_obs(resume=True)
+    load_obs(resume=resume)
     info(f"Load obs group completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
