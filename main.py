@@ -16,14 +16,16 @@ from etl.program import *
 from etl.report import *
 from etl.user import *
 from utils.logger import info
+from config.database import _get_required_env
 
 
-def pre_etl_job(database_name="openmrs_28"):
+def pre_etl_job():
     """
     Perform pre-ETL tasks including disabling foreign key checks and ensuring all 
     text columns in the target database use the utf8mb4 character set.
     """
     target_engine = get_target_engine()
+    database_name = _get_required_env("TARGET_DB_NAME")
     with target_engine.connect() as conn:
         conn.execute(text(f"SET FOREIGN_KEY_CHECKS = 0"))
         conn.commit()
