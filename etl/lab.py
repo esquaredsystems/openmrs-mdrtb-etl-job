@@ -102,9 +102,11 @@ def extract_encounter_results(drop_create=False):
 
 
 def extract_lab_group(drop_create=False):
+    start_time = time.time()
     extract_labtest_type(drop_create=drop_create)
     extract_labtest_attribute_type(drop_create=drop_create)
     extract_encounter_results(drop_create=drop_create)
+    info(f"Extraction completed in {time.time() - start_time:.2f} seconds")
 
 
 ##### Loading functions #####
