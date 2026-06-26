@@ -9,7 +9,7 @@ from utils.logger import info, warning
 def extract_program(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_program'):
         create_program_table(target_engine, drop_create=drop_create)
     info("Fetching data from source program table...")
     with target_engine.connect() as target_conn:
@@ -34,7 +34,7 @@ def extract_program(drop_create=False):
 def extract_program_workflow(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_program_workflow'):
         create_program_workflow_table(target_engine, drop_create=drop_create)
     info("Fetching data from source program_workflow table...")
     with target_engine.connect() as target_conn:
@@ -59,7 +59,7 @@ def extract_program_workflow(drop_create=False):
 def extract_program_workflow_state(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_program_workflow_state'):
         create_program_workflow_state_table(target_engine, drop_create=drop_create)
     info("Fetching data from source program_workflow_state table...")
     with target_engine.connect() as target_conn:

@@ -11,7 +11,7 @@ from utils.logger import info, warning
 ##### Extraction functions #####
 def extract_labtest_type(drop_create=False):
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_labtest_type'):
         create_labtest_type_table(target_engine, drop_create=drop_create)
     info("Fetching data from commonlab.xlsx test_types sheet...")
 
@@ -42,7 +42,7 @@ def extract_labtest_type(drop_create=False):
 
 def extract_labtest_attribute_type(drop_create=False):
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_labtest_attribute_type'):
         create_labtest_attribute_type_table(target_engine, drop_create=drop_create)
     info("Fetching data from commonlab.xlsx attribute_types sheet...")
 
@@ -73,7 +73,7 @@ def extract_labtest_attribute_type(drop_create=False):
 
 def extract_encounter_results(drop_create=False):
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_encounter_results'):
         create_encounter_results_table(target_engine, drop_create=drop_create)
     with target_engine.connect() as conn:
         conn.execute(text("TRUNCATE TABLE _encounter_results"))
@@ -179,6 +179,14 @@ def load_labtest():
     with target_engine.connect() as conn:
         info("Loading data for labtest_test and labtest_sample tables...")
         conn.execute(text(insert_labtest_test_sql))
+        conn.execute(text("""
+            UPDATE labtest_test AS cat
+            INNER JOIN orders AS o ON o.order_id = cat.test_order_id
+            INNER JOIN encounter AS e ON e.encounter_id = o.encounter_id
+            SET cat.date_changed = e.date_changed,
+                cat.changed_by = e.changed_by
+            WHERE e.date_changed IS NOT NULL
+        """))
         conn.commit()
     info(f"Load labtest completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
@@ -197,6 +205,12 @@ def load_labtest_attribute_type():
     with target_engine.connect() as conn:
         info("Loading data for labtest_attribute_type table...")
         conn.execute(text(insert_labtest_attribute_type_sql))
+        conn.execute(text("""
+            UPDATE labtest_attribute_type
+            SET description = CONCAT(description, ' - ', group_name)
+            WHERE group_name IS NOT NULL
+              AND description IS NULL
+        """))
         conn.commit()
     info(f"Load labtest_attribute_type completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
@@ -800,27 +814,3 @@ def load_lab_group():
     load_labtest_attribute_for_drugs()
 
 
-##### Transform functions #####
-def transform_lab_group():
-    start_time = time.time()
-    target_engine = get_target_engine()
-    update_attribute_type_description_sql = """
-        UPDATE labtest_attribute_type
-        SET description = CONCAT(description, ' - ', group_name)
-        WHERE group_name IS NOT NULL
-          AND description IS NULL
-    """
-    update_labtest_test_changed_metadata_sql = """
-        UPDATE labtest_test AS cat
-        INNER JOIN orders AS o ON o.order_id = cat.test_order_id
-        INNER JOIN encounter AS e ON e.encounter_id = o.encounter_id
-        SET cat.date_changed = e.date_changed,
-            cat.changed_by = e.changed_by
-        WHERE e.date_changed IS NOT NULL
-    """
-    with target_engine.connect() as conn:
-        info("Transforming labtest tables...")
-        conn.execute(text(update_attribute_type_description_sql))
-        conn.execute(text(update_labtest_test_changed_metadata_sql))
-        conn.commit()
-    info(f"Transform lab group completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")

@@ -9,7 +9,7 @@ from utils.logger import info, warning
 def extract_privilege(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_privilege'):
         create_privilege_table(target_engine, drop_create=drop_create)
     info("Fetching data from source privilege table...")
     with target_engine.connect() as target_conn:
@@ -34,7 +34,7 @@ def extract_privilege(drop_create=False):
 def extract_role(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_role'):
         create_role_table(target_engine, drop_create=drop_create)
     info("Fetching data from source role table...")
     with target_engine.connect() as target_conn:
@@ -59,7 +59,7 @@ def extract_role(drop_create=False):
 def extract_role_privilege(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_role_privilege'):
         create_role_privilege_table(target_engine, drop_create=drop_create)
     info("Fetching data from source role_privilege table...")
     with target_engine.connect() as target_conn:
@@ -84,7 +84,7 @@ def extract_role_privilege(drop_create=False):
 def extract_role_role(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_role_role'):
         create_role_role_table(target_engine, drop_create=drop_create)
     info("Fetching data from source role_role table...")
     with target_engine.connect() as target_conn:
@@ -109,7 +109,7 @@ def extract_role_role(drop_create=False):
 def extract_users(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_users'):
         create_users_table(target_engine, drop_create=drop_create)
     info("Fetching data from source users table...")
     with target_engine.connect() as target_conn:
@@ -134,7 +134,7 @@ def extract_users(drop_create=False):
 def extract_user_property(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_user_property'):
         create_user_property_table(target_engine, drop_create=drop_create)
     info("Fetching data from source user_property table...")
     with target_engine.connect() as target_conn:
@@ -159,7 +159,7 @@ def extract_user_property(drop_create=False):
 def extract_user_role(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_user_role'):
         create_user_role_table(target_engine, drop_create=drop_create)
     info("Fetching data from source user_role table...")
     with target_engine.connect() as target_conn:
@@ -182,9 +182,42 @@ def extract_user_role(drop_create=False):
         warning("No data found in source user_role table.")
 
 def extract_provider(drop_create=False):
+    start_time = time.time()
+    source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_provider'):
         create_provider_table(target_engine, drop_create=drop_create)
+    select_sql = "SELECT user_id, username, creator, date_created, changed_by, date_changed, person_id, retired, retired_by, date_retired, retire_reason, uuid() as uuid FROM users"
+    with source_engine.connect() as source_conn:
+        source_data = source_conn.execute(text(select_sql)).fetchall()
+    if source_data:
+        info("Inserting data from users into _provider table...")
+        insert_sql = text("""
+            INSERT IGNORE INTO _provider (provider_id, person_id, name, identifier, creator, date_created, changed_by, date_changed, retired, retired_by, date_retired, retire_reason, uuid)
+            VALUES (:provider_id, :person_id, :name, :identifier, :creator, :date_created, :changed_by, :date_changed, :retired, :retired_by, :date_retired, :retire_reason, :uuid)
+        """)
+        with target_engine.connect() as target_conn:
+            for row in source_data:
+                target_conn.execute(insert_sql, {
+                    "provider_id": row.user_id,
+                    "person_id": row.person_id,
+                    "name": row.username,
+                    "identifier": row.username,
+                    "creator": row.creator,
+                    "date_created": row.date_created,
+                    "changed_by": row.changed_by,
+                    "date_changed": row.date_changed,
+                    "retired": row.retired,
+                    "retired_by": row.retired_by,
+                    "date_retired": row.date_retired,
+                    "retire_reason": row.retire_reason,
+                    "uuid": row.uuid
+                })
+            target_conn.commit()
+        info(f"Extract _provider completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
+    else:
+        warning("No data found in source users table.")
+
 
 def extract_user_group(drop_create):
     start_time = time.time()
@@ -319,8 +352,12 @@ def load_provider():
     SELECT provider_id, person_id, name, identifier, creator, date_created, changed_by, date_changed, retired, retired_by, date_retired, retire_reason, uuid FROM _provider
     """
     with target_engine.connect() as conn:
+        conn.execute(text(f"SET FOREIGN_KEY_CHECKS = 0"))
+        conn.commit()
         info("Loading data for provider table...")
         conn.execute(text(select_insert_sql))
+        conn.commit()
+        conn.execute(text(f"SET FOREIGN_KEY_CHECKS = 1"))
         conn.commit()
     info(f"Load provider completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 

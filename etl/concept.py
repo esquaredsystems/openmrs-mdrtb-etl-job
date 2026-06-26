@@ -14,7 +14,7 @@ from utils.logger import info, warning
 ##### Extraction functions #####
 def extract_concept(drop_create=False):
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_concept'):
         create_concept_table(target_engine, drop_create=drop_create)
 
     df = get_concept_data()
@@ -45,7 +45,7 @@ def extract_concept(drop_create=False):
 def extract_concept_answer(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_concept_answer'):
         create_concept_answer_table(target_engine, drop_create=drop_create)
     info("Fetching data from source concept_answer table...")
     with source_engine.connect() as source_conn:
@@ -74,7 +74,7 @@ def extract_concept_answer(drop_create=False):
 def extract_concept_class(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_concept_class'):
         create_concept_class_table(target_engine, drop_create=drop_create)
     info("Fetching data from source concept_class table...")
     with source_engine.connect() as source_conn:
@@ -104,7 +104,7 @@ def extract_concept_class(drop_create=False):
 def extract_concept_complex(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_concept_complex'):
         create_concept_complex_table(target_engine, drop_create=drop_create)
     info("Fetching data from source concept_complex table...")
     with source_engine.connect() as source_conn:
@@ -130,7 +130,7 @@ def extract_concept_complex(drop_create=False):
 def extract_concept_datatype(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_concept_datatype'):
         create_concept_datatype_table(target_engine, drop_create=drop_create)
     info("Fetching data from source concept_datatype table...")
     with source_engine.connect() as source_conn:
@@ -165,7 +165,7 @@ def extract_concept_datatype(drop_create=False):
 def extract_concept_description(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_concept_description'):
         create_concept_description_table(target_engine, drop_create=drop_create)
     info("Fetching data from source concept_description table...")
     with source_engine.connect() as source_conn:
@@ -194,7 +194,7 @@ def extract_concept_description(drop_create=False):
 
 def extract_concept_map(drop_create=False):
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_concept_map'):
         create_concept_map_table(target_engine, drop_create=drop_create)
 
     df = get_concept_map_data()
@@ -223,7 +223,7 @@ def extract_concept_map(drop_create=False):
 
 def extract_concept_name(drop_create=False):
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_concept_name'):
         create_concept_name_table(target_engine, drop_create=drop_create)
 
     df = get_concept_name_data()
@@ -262,7 +262,7 @@ def extract_concept_name(drop_create=False):
 def extract_concept_name_tag(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_concept_name_tag'):
         create_concept_name_tag_table(target_engine, drop_create=drop_create)
     info("Fetching data from source concept_name_tag table...")
     with source_engine.connect() as source_conn:
@@ -292,7 +292,7 @@ def extract_concept_name_tag(drop_create=False):
 def extract_concept_name_tag_map(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_concept_name_tag_map'):
         create_concept_name_tag_map_table(target_engine, drop_create=drop_create)
     info("Fetching data from source concept_name_tag_map table...")
     with source_engine.connect() as source_conn:
@@ -319,7 +319,7 @@ def extract_concept_name_tag_map(drop_create=False):
 def extract_concept_numeric(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_concept_numeric'):
         create_concept_numeric_table(target_engine, drop_create=drop_create)
     info("Fetching data from source concept_numeric table...")
     with source_engine.connect() as source_conn:
@@ -347,7 +347,7 @@ def extract_concept_numeric(drop_create=False):
 
 def extract_concept_reference_source(drop_create=False):
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_concept_reference_source'):
         create_concept_reference_source_table(target_engine, drop_create=drop_create)
 
     df = get_concept_source_data()
@@ -370,13 +370,13 @@ def extract_concept_reference_source(drop_create=False):
 
 def extract_concept_reference_term_table(drop_create=False):
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_concept_reference_term'):
         create_concept_reference_term_table(target_engine, drop_create=drop_create)
 
 
 def extract_concept_set(drop_create=False):
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_concept_set'):
         create_concept_set_table(target_engine, drop_create=drop_create)
 
     df = get_concept_set_data()
@@ -427,6 +427,8 @@ def extract_concept_group(drop_create):
     info("Concept numeric table created successfully")
     extract_concept_reference_source(drop_create=drop_create)
     info("Concept reference source table created successfully")
+    extract_concept_reference_term(drop_create=drop_create)
+    info("Concept reference term table created successfully")
     extract_concept_set(drop_create=drop_create)
     info("Concept set table created successfully")
     extract_concept_word(drop_create=drop_create)
@@ -434,27 +436,26 @@ def extract_concept_group(drop_create):
     info(f"Extraction completed in {time.time() - start_time:.2f} seconds")
 
 
-##### Transformation functions #####
-def transform_concept_reference_term():
+def extract_concept_reference_term(drop_create=False):
     start_time = time.time()
     target_engine = get_target_engine()
+    if drop_create or not table_exists(target_engine, '_concept_reference_term'):
+        create_concept_reference_term_table(target_engine, drop_create=drop_create)
     select_sql = """
-    SELECT DISTINCT cm.concept_map_id AS concept_reference_term_id, cm.source AS concept_source_id, NULL AS name, 
-    cm.concept_id AS code, 1.0 AS version, cm.comment AS description, cm.creator, cm.date_created, 
-    NULL AS date_changed, NULL AS changed_by, 0 AS retired, NULL AS retired_by, NULL AS date_retired, NULL AS retire_reason, cm.uuid  
-    FROM _concept_map AS cm 
-    INNER JOIN _concept_reference_source AS cs ON cs.concept_source_id = cm.source 
+    SELECT DISTINCT cm.concept_map_id AS concept_reference_term_id, cm.source AS concept_source_id, NULL AS name,
+    cm.concept_id AS code, 1.0 AS version, cm.comment AS description, cm.creator, cm.date_created,
+    NULL AS date_changed, NULL AS changed_by, 0 AS retired, NULL AS retired_by, NULL AS date_retired, NULL AS retire_reason, cm.uuid
+    FROM _concept_map AS cm
+    INNER JOIN _concept_reference_source AS cs ON cs.concept_source_id = cm.source
     INNER JOIN _concept_name AS cn ON cn.concept_id = cm.concept_id AND cn.locale = 'en'
     ORDER BY concept_reference_term_id
     """
     with target_engine.connect() as target_conn:
         source_data = target_conn.execute(text(select_sql)).fetchall()
     if source_data:
-        info("(Re)creating _concept_reference_term table...")
-        create_concept_reference_term_table(target_engine, drop_create=True)
-        info("Transforming data to fill _concept_map table...")
+        info("Inserting data into _concept_reference_term table...")
         insert_sql = text("""
-            INSERT INTO _concept_reference_term (concept_reference_term_id, concept_source_id, name, code, version, description, creator, date_created, date_changed, changed_by, retired, retired_by, date_retired, retire_reason, uuid) 
+            INSERT INTO _concept_reference_term (concept_reference_term_id, concept_source_id, name, code, version, description, creator, date_created, date_changed, changed_by, retired, retired_by, date_retired, retire_reason, uuid)
             VALUES (:concept_reference_term_id, :concept_source_id, :name, :code, :version, :description, :creator, :date_created, :date_changed, :changed_by, :retired, :retired_by, :date_retired, :retire_reason, :uuid)
         """)
         with target_engine.connect() as target_conn:
@@ -477,14 +478,9 @@ def transform_concept_reference_term():
                     "uuid": row.uuid
                 })
             target_conn.commit()
-        info(
-            f"Transform _concept_reference_term completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
+        info(f"Extract _concept_reference_term completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
     else:
         warning("No data found in source _concept_map table.")
-
-
-def transform_concept_group():
-    transform_concept_reference_term()
 
 
 ##### Loading functions #####

@@ -1,6 +1,6 @@
 # OpenMRS MDR-TB ETL Job
 
-This project is an ETL (Extract, Transform, Load) pipeline designed to migrate and transform MDR-TB (Multidrug-resistant tuberculosis) data for OpenMRS. It extracts data from a source OpenMRS database, applies necessary transformations (specifically for encounters, concepts, drugs, and lab results), and loads it into a target database.
+This project is an ETL (Extract, Load) pipeline designed to migrate MDR-TB (Multidrug-resistant tuberculosis) data for OpenMRS. It extracts data from a source OpenMRS database and loads it into a target database. Any data reshaping (e.g. deriving provider records, populating encounter_provider, computing drug strength units, and updating lab attribute type descriptions) is embedded directly within the extract and load steps rather than a separate transform phase.
 
 ## Prerequisites
 
@@ -63,7 +63,7 @@ The ETL job is controlled via command-line arguments in `main.py`. Run all comma
 ### Running the Full Pipeline
 
 ```bash
-python main.py --extract --transform --load
+python main.py --extract --load
 ```
 
 ### Individual Steps
@@ -71,7 +71,6 @@ python main.py --extract --transform --load
 | Step | Command |
 | --- | --- |
 | Extraction only | `python main.py --extract` |
-| Transformation only | `python main.py --transform` |
 | Loading only | `python main.py --load` |
 
 ### Hard Reset
@@ -138,7 +137,7 @@ The tolerance threshold (0.1%) accounts for minor expected divergences (e.g., vo
 ```
 openmrs-mdrtb-etl-job/
 ├── config/         # Database connection and app configuration
-├── etl/            # Extract, transform, and load logic per entity
+├── etl/            # Extract and load logic per entity
 ├── models/         # Database schema definitions
 ├── resources/      # Static data and mappings (Excel files)
 ├── tests/          # Test suite

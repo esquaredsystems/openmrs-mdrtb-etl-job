@@ -68,22 +68,9 @@ def run_extract_job(hard_reset=False):
     extract_misc_group(hard_reset)
     extract_patient_group(hard_reset)
     extract_encounter_group(hard_reset)
-    extract_obs_group(hard_reset)
+    # extract_obs_group(hard_reset)
     extract_lab_group(hard_reset)
     info(f"Extraction job completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
-
-
-def run_transform_job():
-    """
-    Execute the data transformation phase of the ETL job.
-    Processes the extracted data to prepare it for loading.
-    """
-    start_time = time.time()
-    transform_encounter_group()
-    transform_concept_group()
-    transform_drug_group()
-    transform_lab_group()
-    info(f"Transformation job completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
 
 def run_load_job():
@@ -131,7 +118,6 @@ def post_etl_job():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="OpenMRS MDR-TB ETL Job")
     parser.add_argument("--extract", action="store_true", help="Run the extraction job")
-    parser.add_argument("--transform", action="store_true", help="Run the transformation job")
     parser.add_argument("--load", action="store_true", help="Run the load job")
     parser.add_argument("--hard-reset", action="store_true",
                         help="Hard reset (Drop-Create) the tables before extraction")
@@ -152,11 +138,10 @@ if __name__ == "__main__":
 
     pre_etl_job()
 
+    run_extract_job(hard_reset=True)
+
     if args.extract:
         run_extract_job(hard_reset=args.hard_reset)
-
-    if args.transform:
-        run_transform_job()
 
     if args.load:
         run_load_job()

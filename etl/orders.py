@@ -10,7 +10,7 @@ from utils.logger import info, warning
 def extract_orders(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_orders'):
         create_orders_table(target_engine, drop_create=drop_create)
     info("Fetching data from source orders table...")
     with target_engine.connect() as target_conn:
@@ -48,7 +48,7 @@ def extract_orders(drop_create=False):
 def extract_order_type(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_order_type'):
         create_order_type_table(target_engine, drop_create=drop_create)
     info("Fetching data from source order_type table...")
     with target_engine.connect() as target_conn:
@@ -129,10 +129,11 @@ def load_order():
     with target_engine.connect() as conn:
         info("Loading data for orders table...")
         conn.execute(text(f"SET FOREIGN_KEY_CHECKS = 0"))
+        conn.commit()
         conn.execute(text(truncate_orders_sql))
+        conn.commit()
         conn.execute(text(f"SET FOREIGN_KEY_CHECKS = 1"))
         conn.commit()
-
         conn.execute(text(insert_seed_order_sql))
         conn.execute(text(insert_encounter_orders_sql))
         conn.execute(text(update_orders_creator_sql))

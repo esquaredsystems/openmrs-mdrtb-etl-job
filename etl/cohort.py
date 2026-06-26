@@ -10,7 +10,7 @@ def extract_cohort(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
 
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_cohort'):
         create_cohort_table(target_engine, drop_create=drop_create)
 
     info("Fetching data from source cohort table...")
@@ -42,7 +42,7 @@ def extract_cohort(drop_create=False):
 def extract_cohort_member(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_cohort_member'):
         create_cohort_member_table(target_engine, drop_create=drop_create)
     info("Fetching data from source cohort_member table...")
     with target_engine.connect() as target_conn:

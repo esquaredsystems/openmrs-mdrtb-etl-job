@@ -9,7 +9,7 @@ from utils.logger import info, warning
 def extract_form(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_form'):
         create_form_table(target_engine, drop_create=drop_create)
     info("Fetching data from source form table...")
     with target_engine.connect() as target_conn:
@@ -34,7 +34,7 @@ def extract_form(drop_create=False):
 def extract_form_field(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_form_field'):
         create_form_field_table(target_engine, drop_create=drop_create)
     info("Fetching data from source form_field table...")
     with target_engine.connect() as target_conn:
@@ -59,7 +59,7 @@ def extract_form_field(drop_create=False):
 def extract_field(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_field'):
         create_field_table(target_engine, drop_create=drop_create)
     info("Fetching data from source field table...")
     with target_engine.connect() as target_conn:
@@ -84,7 +84,7 @@ def extract_field(drop_create=False):
 def extract_field_answer(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_field_answer'):
         create_field_answer_table(target_engine, drop_create=drop_create)
     info("Fetching data from source field_answer table...")
     with target_engine.connect() as target_conn:
@@ -109,7 +109,7 @@ def extract_field_answer(drop_create=False):
 def extract_field_type(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_field_type'):
         create_field_type_table(target_engine, drop_create=drop_create)
     info("Fetching data from source field_type table...")
     with target_engine.connect() as target_conn:
@@ -134,7 +134,7 @@ def extract_field_type(drop_create=False):
 def extract_htmlformentry_html_form(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_htmlformentry_html_form'):
         create_htmlformentry_html_form(target_engine, drop_create=drop_create)
     info("Fetching data from source htmlformentry_html_form table...")
     with target_engine.connect() as target_conn:

@@ -9,7 +9,7 @@ from utils.logger import info, warning
 def extract_global_property(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_global_property'):
         create_global_property_table(target_engine, drop_create=drop_create)
     info("Fetching data from source global_property table...")
     with target_engine.connect() as target_conn:
@@ -34,7 +34,7 @@ def extract_global_property(drop_create=False):
 def extract_note(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_note'):
         create_note_table(target_engine, drop_create=drop_create)
     info("Fetching data from source note table...")
     with target_engine.connect() as target_conn:
@@ -59,7 +59,7 @@ def extract_note(drop_create=False):
 def extract_notification_alert(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_notification_alert'):
         create_notification_alert_table(target_engine, drop_create=drop_create)
     info("Fetching data from source notification_alert table...")
     with target_engine.connect() as target_conn:
@@ -84,7 +84,7 @@ def extract_notification_alert(drop_create=False):
 def extract_notification_alert_recipient(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_notification_alert_recipient'):
         create_notification_alert_recipient_table(target_engine, drop_create=drop_create)
     info("Fetching data from source notification_alert_recipient table...")
     with target_engine.connect() as target_conn:
@@ -109,7 +109,7 @@ def extract_notification_alert_recipient(drop_create=False):
 def extract_relationship_type(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_relationship_type'):
         create_relationship_type_table(target_engine, drop_create=drop_create)
     info("Fetching data from source relationship_type table...")
     with target_engine.connect() as target_conn:

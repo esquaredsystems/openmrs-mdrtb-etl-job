@@ -12,7 +12,7 @@ from utils.logger import info, warning
 ##### Extraction functions #####
 def extract_location(drop_create=False):
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_location'):
         create_location_table(target_engine, drop_create=drop_create)
     info("Fetching data from locations.xlsx location sheet...")
 

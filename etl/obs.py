@@ -11,7 +11,7 @@ from utils.logger import info, warning
 def extract_obs(drop_create=False, resume=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_obs'):
         create_obs_table(target_engine, drop_create=drop_create)
     info("Fetching data from source obs table...")
     insert_query = text("""

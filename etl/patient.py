@@ -10,7 +10,7 @@ from utils.logger import info, warning
 def extract_patient(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_patient'):
         create_patient_table(target_engine, drop_create=drop_create)
     info("Fetching data from source patient table...")
     with target_engine.connect() as target_conn:
@@ -54,7 +54,7 @@ def extract_patient(drop_create=False):
 def extract_patient_identifier(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_patient_identifier'):
         create_patient_identifier_table(target_engine, drop_create=drop_create)
     info("Fetching data from source patient_identifier table...")
     with target_engine.connect() as target_conn:
@@ -100,7 +100,7 @@ def extract_patient_identifier(drop_create=False):
 def extract_patient_identifier_type(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_patient_identifier_type'):
         create_patient_identifier_type_table(target_engine, drop_create=drop_create)
     info("Fetching data from source patient_identifier_type table...")
     with target_engine.connect() as target_conn:
@@ -132,7 +132,7 @@ def extract_patient_identifier_type(drop_create=False):
 def extract_patient_program(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_patient_program'):
         create_patient_program_table(target_engine, drop_create=drop_create)
     info("Fetching data from source patient_program table...")
     with target_engine.connect() as target_conn:
@@ -179,7 +179,7 @@ def extract_patient_program(drop_create=False):
 def extract_person(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_person'):
         create_person_table(target_engine, drop_create=drop_create)
     info("Fetching data from source person table...")
     with target_engine.connect() as target_conn:
@@ -225,7 +225,7 @@ def extract_person(drop_create=False):
 def extract_person_address(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_person_address'):
         create_person_address_table(target_engine, drop_create=drop_create)
     info("Fetching data from source person_address table...")
     with target_engine.connect() as target_conn:
@@ -273,7 +273,7 @@ def extract_person_address(drop_create=False):
 def extract_person_attribute(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_person_attribute'):
         create_person_attribute_table(target_engine, drop_create=drop_create)
     info("Fetching data from source person_attribute table...")
     with target_engine.connect() as target_conn:
@@ -319,7 +319,7 @@ def extract_person_attribute(drop_create=False):
 def extract_person_attribute_type(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_person_attribute_type'):
         create_person_attribute_type_table(target_engine, drop_create=drop_create)
     info("Fetching data from source person_attribute_type table...")
     with target_engine.connect() as target_conn:
@@ -351,7 +351,7 @@ def extract_person_attribute_type(drop_create=False):
 def extract_person_name(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_person_name'):
         create_person_name_table(target_engine, drop_create=drop_create)
     info("Fetching data from source person_name table...")
     with target_engine.connect() as target_conn:

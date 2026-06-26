@@ -10,7 +10,7 @@ from utils.logger import info, warning
 def extract_report_object(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_report_object'):
         create_report_object_table(target_engine, drop_create=drop_create)
     info("Fetching data from source report_object table...")
     with target_engine.connect() as target_conn:
@@ -35,7 +35,7 @@ def extract_report_object(drop_create=False):
 def extract_report_schema_xml(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_report_schema_xml'):
         create_report_schema_xml_table(target_engine, drop_create=drop_create)
     info("Fetching data from source report_schema_xml table...")
     with target_engine.connect() as target_conn:
@@ -60,7 +60,7 @@ def extract_report_schema_xml(drop_create=False):
 def extract_serialized_object(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_serialized_object'):
         create_serialized_object_table(target_engine, drop_create=drop_create)
     info("Fetching data from source serialized_object table...")
     with target_engine.connect() as target_conn:

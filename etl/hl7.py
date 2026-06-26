@@ -9,7 +9,7 @@ from utils.logger import info, warning
 def extract_hl7_in_error(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_hl7_in_error'):
         create_hl7_in_error_table(target_engine, drop_create=drop_create)
     info("Fetching data from source hl7_in_error table...")
     with target_engine.connect() as target_conn:
@@ -34,7 +34,7 @@ def extract_hl7_in_error(drop_create=False):
 def extract_hl7_in_queue(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_hl7_in_queue'):
         create_hl7_in_queue_table(target_engine, drop_create=drop_create)
     info("Fetching data from source hl7_in_queue table...")
     with target_engine.connect() as target_conn:
@@ -59,7 +59,7 @@ def extract_hl7_in_queue(drop_create=False):
 def extract_hl7_source(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_hl7_source'):
         create_hl7_source_table(target_engine, drop_create=drop_create)
     info("Fetching data from source hl7_source table...")
     with target_engine.connect() as target_conn:

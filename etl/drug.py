@@ -10,7 +10,7 @@ from utils.logger import info, warning
 def extract_drug(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_drug'):
         create_drug_table(target_engine, drop_create=drop_create)
     info("Fetching data from source drug table...")
     with target_engine.connect() as target_conn:
@@ -35,7 +35,7 @@ def extract_drug(drop_create=False):
 def extract_drug_ingredient(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_drug_ingredient'):
         create_drug_ingredient_table(target_engine, drop_create=drop_create)
     info("Fetching data from source drug_ingredient table...")
     with target_engine.connect() as target_conn:
@@ -60,7 +60,7 @@ def extract_drug_ingredient(drop_create=False):
 def extract_drug_order(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_drug_order'):
         create_drug_order_table(target_engine, drop_create=drop_create)
     info("Fetching data from source drug_order table...")
     with target_engine.connect() as target_conn:
@@ -123,6 +123,22 @@ def load_drug():
     with target_engine.connect() as conn:
         info("Loading data for drug table...")
         conn.execute(text(select_insert_sql))
+        conn.execute(text("""
+            UPDATE drug SET dose_limit_units = CASE
+                WHEN strength LIKE '%mg' THEN (
+                    SELECT concept_id FROM concept_name WHERE name = 'MILLIGRAM(S)' AND locale = 'en' LIMIT 1
+                )
+                WHEN strength LIKE '%ml' THEN (
+                    SELECT concept_id FROM concept_name WHERE name = 'MILLILITRE(S)' AND locale = 'en' LIMIT 1
+                )
+                WHEN strength LIKE '%tab' OR strength LIKE '%tab(s)' THEN (
+                    SELECT concept_id FROM concept_name WHERE name = 'FILM COATED TABLET' AND locale = 'en' LIMIT 1
+                )
+                ELSE dose_limit_units
+            END
+            WHERE (dose_limit_units IS NULL OR dose_limit_units = 0)
+            AND (strength LIKE '%mg' OR strength LIKE '%ml' OR strength LIKE '%tab' OR strength LIKE '%tab(s)')
+        """))
         conn.commit()
     info(f"Load drug completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
@@ -162,28 +178,3 @@ def load_drug_group():
     load_drug_order()
 
 
-##### Transform functions #####
-def transform_drug_group():
-    """
-    Updates the dose_limit_units column in the drug table based on the strength suffix.
-    """
-    target_engine = get_target_engine()
-    with target_engine.connect() as conn:
-        conn.execute(text("""
-            UPDATE drug SET dose_limit_units = CASE
-                WHEN strength LIKE '%mg' THEN (
-                    SELECT concept_id FROM concept_name WHERE name = 'MILLIGRAM(S)' AND locale = 'en' LIMIT 1
-                )
-                WHEN strength LIKE '%ml' THEN (
-                    SELECT concept_id FROM concept_name WHERE name = 'MILLILITRE(S)' AND locale = 'en' LIMIT 1
-                )
-                WHEN strength LIKE '%tab' OR strength LIKE '%tab(s)' THEN (
-                    SELECT concept_id FROM concept_name WHERE name = 'FILM COATED TABLET' AND locale = 'en' LIMIT 1
-                )
-                ELSE dose_limit_units
-            END
-            WHERE (dose_limit_units IS NULL OR dose_limit_units = 0)
-            AND (strength LIKE '%mg' OR strength LIKE '%ml' OR strength LIKE '%tab' OR strength LIKE '%tab(s)')
-        """))
-        conn.commit()
-    info("Drug dose_limit_units updated based on strength.")

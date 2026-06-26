@@ -10,7 +10,7 @@ def extract_address_hierarchy_level(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
 
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_address_hierarchy_level'):
         create_address_hierarchy_level_table(target_engine, drop_create=drop_create)
 
     info("Fetching data from source address_hierarchy_level table...")
@@ -42,7 +42,7 @@ def extract_address_hierarchy_entry(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
 
-    if drop_create:
+    if drop_create or not table_exists(target_engine, '_address_hierarchy_entry'):
         create_address_hierarchy_entry_table(target_engine, drop_create=drop_create)
 
     info("Fetching data from source address_hierarchy_entry table...")
