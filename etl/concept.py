@@ -451,6 +451,8 @@ def extract_concept_reference_term(drop_create=False):
     ORDER BY concept_reference_term_id
     """
     with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _concept_reference_term"))
+        target_conn.commit()
         source_data = target_conn.execute(text(select_sql)).fetchall()
     if source_data:
         info("Inserting data into _concept_reference_term table...")

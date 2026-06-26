@@ -138,8 +138,6 @@ if __name__ == "__main__":
 
     pre_etl_job()
 
-    run_extract_job(hard_reset=True)
-
     if args.extract:
         run_extract_job(hard_reset=args.hard_reset)
 
