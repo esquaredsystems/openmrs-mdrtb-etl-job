@@ -116,6 +116,54 @@ def load_order():
         INNER JOIN concept_name cn ON cn.name = 'MICROSCOPY TEST CONSTRUCT' AND cn.locale = 'en' AND cn.concept_name_type = 'FULLY_SPECIFIED' AND cn.voided = 0
         WHERE e.encounter_type IN (5, 11)
     """
+    # Load drug orders (order_type_id = 1) from the staging _orders table.
+    # The original order_id is preserved so that drug_order.order_id (loaded later)
+    # can attach to the correct parent row. Old (OpenMRS 1.6) columns are mapped to
+    # the new (2.5) schema, and joins keep the NOT NULL foreign keys valid:
+    #   - orderer: 1.6 stores a user_id; 2.5 requires a provider_id -> map user -> provider,
+    #     falling back to the lowest existing provider_id if no match.
+    #   - encounter_id / patient_id: required NOT NULL FKs -> INNER JOIN guarantees they exist.
+    #   - order_reason: FK to concept -> LEFT JOIN nulls out any invalid concept reference.
+    insert_drug_orders_sql = """
+        INSERT INTO orders (
+            order_id, order_type_id, concept_id, orderer, encounter_id, instructions,
+            date_activated, auto_expire_date, date_stopped, order_reason, order_reason_non_coded,
+            creator, date_created, voided, voided_by, date_voided, void_reason,
+            patient_id, accession_number, uuid, urgency, order_number, order_action, care_setting
+        )
+        SELECT
+            o.order_id,
+            o.order_type_id,
+            o.concept_id,
+            COALESCE(p.provider_id, (SELECT MIN(provider_id) FROM provider)) AS orderer,
+            o.encounter_id,
+            o.instructions,
+            o.start_date AS date_activated,
+            o.auto_expire_date,
+            o.discontinued_date AS date_stopped,
+            c.concept_id AS order_reason,
+            o.discontinued_reason_non_coded AS order_reason_non_coded,
+            o.creator,
+            o.date_created,
+            o.voided,
+            o.voided_by,
+            o.date_voided,
+            o.void_reason,
+            o.patient_id,
+            o.accession_number,
+            COALESCE(o.uuid, UUID()) AS uuid,
+            'ROUTINE' AS urgency,
+            CONCAT('DRUG-ORD-', o.order_id) AS order_number,
+            'NEW' AS order_action,
+            1 AS care_setting
+        FROM _orders o
+        INNER JOIN encounter e ON e.encounter_id = o.encounter_id
+        INNER JOIN patient pt ON pt.patient_id = o.patient_id
+        LEFT JOIN users u ON u.user_id = o.orderer
+        LEFT JOIN provider p ON p.person_id = u.person_id
+        LEFT JOIN concept c ON c.concept_id = o.discontinued_reason
+        WHERE o.order_type_id = 1
+    """
     update_orders_creator_sql = """
         UPDATE orders
         SET creator = 1
@@ -131,6 +179,10 @@ def load_order():
         conn.execute(text(f"SET FOREIGN_KEY_CHECKS = 0"))
         conn.commit()
         conn.execute(text(truncate_orders_sql))
+        # Drug orders are inserted FIRST because they carry explicit (preserved) order_id
+        # values. The seed and encounter inserts below rely on AUTO_INCREMENT; inserting the
+        # explicit ids first advances the counter past them and avoids a primary-key collision.
+        conn.execute(text(insert_drug_orders_sql))
         conn.execute(text(insert_seed_order_sql))
         conn.execute(text(insert_encounter_orders_sql))
         conn.execute(text(update_orders_creator_sql))

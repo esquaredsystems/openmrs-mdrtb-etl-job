@@ -1,5 +1,8 @@
 # AGENTS.md
 
+> Companion files: `./graph.md` (this module's structure/pipeline index) and the
+> repo-root `../.agents/graph.md` (shared domain model, concept UUIDs, system topology).
+
 ## Project Context
 This project is an OpenMRS MDR-TB ETL job for an OpenMRS upgrade to v2.8.
 It extracts data from a source database, stages it in target-side underscore-prefixed tables, applies targeted transformations needed for the upgraded OpenMRS schema, and loads selected records into the target environment.

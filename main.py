@@ -94,6 +94,9 @@ def run_load_job():
     load_encounter_group()
     load_obs_group()
     load_orders_group()
+    # Must run after load_orders_group(): drug_order.order_id -> orders.order_id (drug orders
+    # are inserted into `orders` inside load_orders_group()).
+    load_drug_order()
     load_lab_group()
     info(f"Load job completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 

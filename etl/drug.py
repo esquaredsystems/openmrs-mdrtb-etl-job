@@ -175,6 +175,10 @@ def load_drug_order():
 def load_drug_group():
     load_drug()
     load_drug_ingredient()
-    load_drug_order()
+    # NOTE: load_drug_order() is intentionally NOT called here. drug_order.order_id is a
+    # foreign key to orders.order_id, and the drug orders are only inserted into `orders`
+    # during load_orders_group(). It is therefore called from main.run_load_job() AFTER
+    # load_orders_group(); calling it here would silently drop every drug_order row
+    # (INSERT IGNORE) because the parent orders do not exist yet.
 
 
