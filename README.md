@@ -86,13 +86,71 @@ python main.py --extract --hard-reset
 docker run --env-file .env openmrs-mdrtb-etl-job
 ```
 
+## Foreign Key Violation Check
+
+The ETL loads data with `FOREIGN_KEY_CHECKS = 0`, so rows can end up in the target
+database whose foreign key values point at parent rows that do not exist. The
+`--check-integrity` flag scans the target database and reports **every** such row.
+
+```bash
+python main.py --check-integrity
+```
+
+This is **read-only** — it issues `SELECT` statements only and never writes,
+alters, or deletes anything. When run on its own it also skips `pre_etl_job()`
+and `post_etl_job()`, so nothing at all is written to the database.
+
+### How it works
+
+1. Reads every declared foreign key from `information_schema` (no hand-maintained
+   list, so it stays correct as the schema changes).
+2. Scans each child table with one anti-join query, recording every offending
+   row. There is no sampling and no row limit. Results are streamed in chunks of
+   `BATCH_SIZE`, so a table with millions of orphan rows never has to fit in
+   memory.
+3. A row is only a violation if all of its foreign key columns are non-NULL and
+   no matching parent row exists — this matches MySQL's own rule, which treats a
+   foreign key containing a NULL as satisfied.
+
+There is no resume state: if the check is interrupted, just run it again.
+
+Run `--check-integrity` on its own to check only, or alongside `--extract` /
+`--load` to check the database right after the ETL finishes.
+
+### Output
+
+Written to `fk_report/` (git-ignored, since it contains patient data):
+
+| File | Contents |
+| --- | --- |
+| `summary.csv` | One row per constraint: child/parent tables, columns, violating row count, status, duration |
+| `<table>__<constraint>.csv` | Every violating row — primary key, the offending foreign key values, plus `uuid`, `voided`, `retired`, `date_created` where the table has them. Only created when violations exist |
+
+CSVs are written as UTF-8 with a BOM so Excel displays Cyrillic text correctly.
+
+The scan takes as long as it takes on large tables (`obs`, `encounter`);
+progress is logged to `etl.log`. If one constraint fails (for example a dropped
+connection), the run logs the error, carries on with the remaining constraints,
+and lists the failed ones at the end.
+
+Examples:
+
+```bash
+# Check the target database
+python main.py --check-integrity
+
+# Run the load, then check what it produced
+python main.py --load --check-integrity
+```
+
 ## Testing
 
-Tests are located in the `tests/` directory. There are two suites:
+Tests are located in the `tests/` directory. There are three suites:
 
 | Suite | File | Requires DB? | Description |
 | --- | --- | --- | --- |
 | Helper tests | `tests/test_helpers.py` | No | Unit tests for utility functions and Excel resource loading |
+| FK check tests | `tests/test_fk_check.py` | No | Unit tests for the foreign key checker's SQL construction, identifier safety, CSV output, and resume state |
 | Migration tests | `tests/test_migration.py` | Yes (both DBs) | Validates row counts between source and target after migration |
 
 ### Setup
@@ -138,6 +196,7 @@ The tolerance threshold (0.1%) accounts for minor expected divergences (e.g., vo
 openmrs-mdrtb-etl-job/
 ├── config/         # Database connection and app configuration
 ├── etl/            # Extract and load logic per entity
+│   └── fk_check.py # Read-only foreign key violation detector (--check-integrity)
 ├── models/         # Database schema definitions
 ├── resources/      # Static data and mappings (Excel files)
 ├── tests/          # Test suite

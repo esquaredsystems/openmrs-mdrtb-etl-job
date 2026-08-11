@@ -48,7 +48,7 @@ def extract_encounter(drop_create=False):
         target_conn.commit()
 
     insert_query = text(
-        "INSERT INTO _encounter (encounter_id, encounter_type, patient_id, provider_id, location_id, form_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid) VALUES (:encounter_id, :encounter_type, :patient_id, :provider_id, :location_id, :form_id, :encounter_datetime, :creator, :date_created, :voided, :voided_by, :date_voided, :void_reason, :changed_by, :date_changed, :uuid)")
+        "INSERT INTO _encounter (encounter_id, encounter_type, patient_id, provider_id, location_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid) VALUES (:encounter_id, :encounter_type, :patient_id, :provider_id, :location_id, :encounter_datetime, :creator, :date_created, :voided, :voided_by, :date_voided, :void_reason, :changed_by, :date_changed, :uuid)")
 
     with source_engine.connect() as source_conn:
         # Using execution_options(yield_per=BATCH_SIZE) for batching
@@ -61,7 +61,7 @@ def extract_encounter(drop_create=False):
                 batch.append({
                     "encounter_id": row.encounter_id, "encounter_type": row.encounter_type,
                     "patient_id": row.patient_id, "provider_id": row.provider_id, "location_id": row.location_id,
-                    "form_id": row.form_id, "encounter_datetime": row.encounter_datetime, "creator": row.creator,
+                    "encounter_datetime": row.encounter_datetime, "creator": row.creator,
                     "date_created": row.date_created, "voided": row.voided, "voided_by": row.voided_by,
                     "date_voided": row.date_voided, "void_reason": row.void_reason, "changed_by": row.changed_by,
                     "date_changed": row.date_changed, "uuid": row.uuid
@@ -143,8 +143,8 @@ def load_encounter():
         batch_number = 1
         while offset < total_old:
             conn.execute(text("""
-                INSERT IGNORE INTO encounter (encounter_id, encounter_type, patient_id, location_id, form_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid)
-                SELECT encounter_id, encounter_type, patient_id, location_id, form_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid
+                INSERT IGNORE INTO encounter (encounter_id, encounter_type, patient_id, location_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid)
+                SELECT encounter_id, encounter_type, patient_id, location_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid
                 FROM _encounter
                 WHERE YEAR(date_created) < YEAR(CURRENT_TIMESTAMP())
                 ORDER BY encounter_id
@@ -163,10 +163,10 @@ def load_encounter():
         batch_number = 1
         while offset < total_current:
             conn.execute(text("""
-                INSERT INTO encounter (encounter_id, encounter_type, patient_id, location_id, form_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid)
-                SELECT encounter_id, encounter_type, patient_id, location_id, form_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid
+                INSERT INTO encounter (encounter_id, encounter_type, patient_id, location_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid)
+                SELECT encounter_id, encounter_type, patient_id, location_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid
                 FROM (
-                    SELECT encounter_id, encounter_type, patient_id, location_id, form_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid
+                    SELECT encounter_id, encounter_type, patient_id, location_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid
                     FROM _encounter
                     WHERE YEAR(date_created) >= YEAR(CURRENT_TIMESTAMP())
                     ORDER BY encounter_id
@@ -176,7 +176,7 @@ def load_encounter():
                     encounter_type = VALUES(encounter_type),
                     patient_id = VALUES(patient_id),
                     location_id = VALUES(location_id),
-                    form_id = VALUES(form_id),
+                    location_id = VALUES(location_id),
                     encounter_datetime = VALUES(encounter_datetime),
                     creator = VALUES(creator),
                     date_created = VALUES(date_created),

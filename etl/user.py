@@ -277,6 +277,10 @@ def load_role_role():
         info("Loading data for role_role table...")
         conn.execute(text(select_insert_sql))
         conn.commit()
+    with target_engine.connect() as conn:
+        info("Loading additional role_role records")
+        conn.execute("INSERT IGNORE INTO role_role (parent_role, child_role) VALUES ('Lab Technician', 'Lab Supervisor'), ('Lab View', 'Lab Technician')")
+        conn.commit()
     info(f"Load role_role completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
 def load_role_privilege():
@@ -343,6 +347,15 @@ def load_user_role():
         conn.execute(text(select_insert_sql))
         conn.commit()
     info(f"Load user_role completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
+    select_insert_sql = """
+        INSERT IGNORE INTO user_role (user_id, role)
+        SELECT user_id, 'Authenticated' FROM users WHERE retired = 0
+        """
+    with target_engine.connect() as conn:
+        info("Loading data for user_role table...")
+        conn.execute(text(select_insert_sql))
+        conn.commit()
+
 
 def load_provider():
     start_time = time.time()

@@ -27,6 +27,9 @@ Pipfile.lock
 # Logs
 *.log
 
+# Foreign key check output (may contain patient data - never commit)
+fk_report/
+
 # Database files
 *.sqlite3
 

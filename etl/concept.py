@@ -491,8 +491,8 @@ def load_concept_class():
     target_engine = get_target_engine()
     select_insert_sql = """
     INSERT IGNORE INTO concept_class (concept_class_id, name, description, creator, date_created, retired, retired_by, date_retired, retire_reason, uuid) 
-    SELECT concept_class_id, name, description, creator, date_created, retired, retired_by, date_retired, retire_reason, uuid FROM _concept_class 
-    WHERE name NOT IN (SELECT name FROM concept_class);
+    SELECT s.concept_class_id, s.name, s.description, s.creator, s.date_created, s.retired, s.retired_by, s.date_retired, s.retire_reason, s.uuid FROM _concept_class s 
+    WHERE NOT EXISTS (SELECT 1 FROM concept_class t WHERE t.name = s.name COLLATE utf8mb4_general_ci);
     """
     with target_engine.connect() as conn:
         info("Loading data for field table...")

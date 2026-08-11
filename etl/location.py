@@ -2,6 +2,7 @@ import time
 
 import numpy as np
 import pandas as pd
+from sqlalchemy import bindparam
 
 from config.database import get_target_engine
 from models.schema_models import *
@@ -96,22 +97,44 @@ def load_location():
     info(f"Load location completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
 
+# Levels that get a LEVEL location attribute. value_reference is the level itself,
+# which is why one statement replaces what used to be four near-identical queries.
+LEVEL_ATTRIBUTE_VALUES = ["REGION", "SUBREGION", "DISTRICT", "FACILITY"]
+
+
+def build_location_attribute_insert():
+    """
+    Rerun-safe INSERT for the LEVEL location attribute.
+    Note this is insert-only, matching the rest of the ETL: a location that already has a LEVEL attribute is left untouched, it is not updated to a new value.
+    """
+    columns = (
+        "(location_id, attribute_type_id, value_reference, uuid, creator, date_created) "
+    )
+    return text(
+        f"INSERT IGNORE INTO location_attribute {columns}"
+        "SELECT l.location_id, lat.location_attribute_type_id, l.level, UUID(), 1, current_timestamp() "
+        "FROM _location AS l "
+        "INNER JOIN location_attribute_type AS lat ON lat.name = 'LEVEL' "
+        "WHERE l.level IN :levels "
+        "AND NOT EXISTS ("
+        "    SELECT 1 FROM location_attribute AS existing "
+        "    WHERE existing.location_id = l.location_id "
+        "    AND existing.attribute_type_id = lat.location_attribute_type_id "
+        "    AND existing.voided = 0"
+        ")"
+    ).bindparams(bindparam("levels", expanding=True))
+
+
 def load_location_attribute():
     start_time = time.time()
     target_engine = get_target_engine()
-    columns = "(location_id, attribute_type_id, value_reference, uuid, creator, date_created) "
-    insert_queries = [
-        f"INSERT IGNORE INTO location_attribute {columns} select l.location_id, lat.location_attribute_type_id as attribute_type_id, 'REGION', UUID(), 1 as creator, current_timestamp() as date_created from _location as l inner join location_attribute_type as lat on lat.name = 'LEVEL' where l.level = 'REGION'",
-        f"INSERT IGNORE INTO location_attribute {columns} select l.location_id, lat.location_attribute_type_id as attribute_type_id, 'SUBREGION', UUID(), 1 as creator, current_timestamp() as date_created from _location as l inner join location_attribute_type as lat on lat.name = 'LEVEL' where l.level = 'SUBREGION'",
-        f"INSERT IGNORE INTO location_attribute {columns} select l.location_id, lat.location_attribute_type_id as attribute_type_id, 'DISTRICT', UUID(), 1 as creator, current_timestamp() as date_created from _location as l inner join location_attribute_type as lat on lat.name = 'LEVEL' where l.level = 'DISTRICT'",
-        f"INSERT IGNORE INTO location_attribute {columns} select l.location_id, lat.location_attribute_type_id as attribute_type_id, 'FACILITY', UUID(), 1 as creator, current_timestamp() as date_created from _location as l inner join location_attribute_type as lat on lat.name = 'LEVEL' where l.level = 'FACILITY'",
-        f"INSERT IGNORE INTO location_attribute {columns} select l.location_id, lat.location_attribute_type_id as attribute_type_id, 'DISTRICT', UUID(), 1 as creator, current_timestamp() as date_created from _location as l inner join location_attribute_type as lat on lat.name = 'LEVEL' where l.level = 'DISTRICT' and l.parent_location not in (select location_id from location)",
-    ]
     with target_engine.connect() as conn:
         info("Loading data for location_attribute table...")
-        for i, query in enumerate(insert_queries, 1):
-            conn.execute(text(query))
-            conn.commit()
+        result = conn.execute(
+            build_location_attribute_insert(), {"levels": LEVEL_ATTRIBUTE_VALUES}
+        )
+        conn.commit()
+        info(f"Inserted {result.rowcount} LEVEL attribute(s); existing ones left as they were")
     info(f"Load location_attribute completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
 
