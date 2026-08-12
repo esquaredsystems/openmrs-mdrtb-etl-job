@@ -516,8 +516,11 @@ def load_patient_identifier_type():
         VALUES (1, 'OpenMRS Identification Number', 'Unique number used in OpenMRS', '', 1, 1, '2005-09-22 00:00:00', 0, NULL, 'org.openmrs.patient.impl.LuhnIdentifierValidator', NULL, 0, '8d793bee-c2cc-11de-8d13-0010c6dffd0f')
         """))
         conn.execute(text("""
-        INSERT IGNORE INTO patient_identifier_type (patient_identifier_type_id, name, description, format, check_digit, creator, date_created, required, format_description, validator, location_behavior, retired, retired_by, date_retired, retire_reason, uuid)
-        SELECT patient_identifier_type_id, name, description, format, check_digit, creator, date_created, required, format_description, validator, location_behavior, retired, retired_by, date_retired, retire_reason, uuid FROM _patient_identifier_type
+        INSERT INTO patient_identifier_type (patient_identifier_type_id, name, description, format, check_digit, validator, uuid)
+        SELECT patient_identifier_type_id, name, description, format, check_digit, validator, uuid
+        FROM _patient_identifier_type
+        ON DUPLICATE KEY UPDATE
+            name = VALUES(name), description = VALUES(description), format = VALUES(format), check_digit = VALUES(check_digit), validator = VALUES(validator), uuid = VALUES(uuid)
         """))
         conn.commit()
     info(f"Load patient_identifier_type completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")

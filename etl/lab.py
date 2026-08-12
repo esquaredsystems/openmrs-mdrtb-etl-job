@@ -199,7 +199,7 @@ def load_labtest_attribute_type():
             test_attribute_type_id, test_type_id, name, datatype, min_occurs, max_occurs, datatype_config, handler_config, sort_weight, description, creator, date_created,
             changed_by, date_changed, retired, retired_by, date_retired, retire_reason, uuid, preferred_handler, hint, group_name, multiset_name
         )
-        SELECT test_attribute_type_id, test_type_id, name, 'org.openmrs.customdatatype.datatype.FreeTextDatatype' AS datatype, 0 AS min_occurs, NULL AS max_occurs, datatype_config, NULL AS handler_config, sort_weight, description, creator, date_created, NULL AS changed_by, NULL AS date_changed, retired, NULL AS retired_by, NULL AS date_retired, NULL AS retire_reason, uuid, preferred_handler, hint, group_name, multiset_name
+        SELECT test_attribute_type_id, test_type_id, name, datatype, 0 AS min_occurs, NULL AS max_occurs, datatype_config, NULL AS handler_config, sort_weight, description, creator, date_created, NULL AS changed_by, NULL AS date_changed, retired, NULL AS retired_by, NULL AS date_retired, NULL AS retire_reason, uuid, preferred_handler, hint, group_name, multiset_name
         FROM _labtest_attribute_type
     """
     with target_engine.connect() as conn:
