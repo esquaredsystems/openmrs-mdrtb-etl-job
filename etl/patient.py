@@ -426,6 +426,7 @@ def load_person():
     select_insert_sql = """
     INSERT INTO person (person_id, gender, birthdate, birthdate_estimated, dead, death_date, cause_of_death, creator, date_created, changed_by, date_changed, voided, voided_by, date_voided, void_reason, uuid)
     SELECT person_id, gender, birthdate, birthdate_estimated, dead, death_date, cause_of_death, creator, date_created, changed_by, date_changed, voided, voided_by, date_voided, void_reason, uuid FROM _person
+    WHERE NOT EXISTS (SELECT * FROM person t WHERE t.person_id = _person.person_id)
     """
     with target_engine.connect() as conn:
         info("Loading data for person table...")
@@ -516,11 +517,15 @@ def load_patient_identifier_type():
         VALUES (1, 'OpenMRS Identification Number', 'Unique number used in OpenMRS', '', 1, 1, '2005-09-22 00:00:00', 0, NULL, 'org.openmrs.patient.impl.LuhnIdentifierValidator', NULL, 0, '8d793bee-c2cc-11de-8d13-0010c6dffd0f')
         """))
         conn.execute(text("""
-        INSERT INTO patient_identifier_type (patient_identifier_type_id, name, description, format, check_digit, validator, uuid)
-        SELECT patient_identifier_type_id, name, description, format, check_digit, validator, uuid
+        INSERT INTO patient_identifier_type (patient_identifier_type_id, name, description, format, check_digit, creator, date_created, required, format_description, validator, location_behavior, retired, uuid)
+        SELECT patient_identifier_type_id, name, description, format, check_digit, creator, date_created, required, format_description, validator, location_behavior, retired, uuid
         FROM _patient_identifier_type
         ON DUPLICATE KEY UPDATE
-            name = VALUES(name), description = VALUES(description), format = VALUES(format), check_digit = VALUES(check_digit), validator = VALUES(validator), uuid = VALUES(uuid)
+            name = VALUES(name), description = VALUES(description), format = VALUES(format), 
+            check_digit = VALUES(check_digit), creator = VALUES(creator), date_created = VALUES(date_created), 
+            required = VALUES(required), format_description = VALUES(format_description), 
+            validator = VALUES(validator), location_behavior = VALUES(location_behavior), 
+            retired = VALUES(retired), uuid = VALUES(uuid)
         """))
         conn.commit()
     info(f"Load patient_identifier_type completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")

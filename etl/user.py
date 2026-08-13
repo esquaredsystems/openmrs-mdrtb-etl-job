@@ -279,7 +279,7 @@ def load_role_role():
         conn.commit()
     with target_engine.connect() as conn:
         info("Loading additional role_role records")
-        conn.execute("INSERT IGNORE INTO role_role (parent_role, child_role) VALUES ('Lab Technician', 'Lab Supervisor'), ('Lab View', 'Lab Technician')")
+        conn.execute(text("INSERT IGNORE INTO role_role (parent_role, child_role) VALUES ('Lab Technician', 'Lab Supervisor'), ('Lab View', 'Lab Technician');"))
         conn.commit()
     info(f"Load role_role completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
