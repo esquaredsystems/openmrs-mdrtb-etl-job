@@ -586,6 +586,143 @@ def load_patient_program():
         conn.commit()
     info(f"Load patient_program completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
+    # Link patient_identifier to patient_program (new functionality)
+    link_patient_identifiers_to_programs(target_engine)
+
+
+def link_patient_identifiers_to_programs(target_engine):
+    """
+    Link patient_identifier records to their corresponding patient_program entries.
+
+    Mapping logic:
+    - identifier_type 2 → program_id 2
+    - identifier_type 5 → program_id 1
+
+    For patients with multiple enrollments in the same program, use date proximity:
+    pick the patient_program with date_created closest to the identifier's date_created.
+    """
+    start_time = time.time()
+    info("Linking patient_identifier records to patient_program entries...")
+
+    with target_engine.connect() as conn:
+        # CASE #1: Simple mapping for single program enrollments per patient
+        info("Case #1: Linking identifiers with single program enrollment...")
+
+        # Link identifier_type 2 to program_id 2
+        conn.execute(text("""
+            UPDATE patient_identifier pi
+            INNER JOIN patient_program pp ON pp.patient_id = pi.patient_id AND pp.program_id = 2
+            SET pi.patient_program_id = pp.patient_program_id
+            WHERE pi.identifier_type = 2
+                AND pi.patient_program_id IS NULL
+                AND pi.voided = 0
+                AND pp.voided = 0
+        """))
+        result1 = conn.info.last_executed
+        conn.commit()
+        info(f"Linked identifier_type 2 → program_id 2")
+
+        # Link identifier_type 5 to program_id 1
+        conn.execute(text("""
+            UPDATE patient_identifier pi
+            INNER JOIN patient_program pp ON pp.patient_id = pi.patient_id AND pp.program_id = 1
+            SET pi.patient_program_id = pp.patient_program_id
+            WHERE pi.identifier_type = 5
+                AND pi.patient_program_id IS NULL
+                AND pi.voided = 0
+                AND pp.voided = 0
+        """))
+        conn.commit()
+        info(f"Linked identifier_type 5 → program_id 1")
+
+    # CASE #2: Complex matching for patients with multiple enrollments of same program
+    info("Case #2: Matching identifiers with multiple program enrollments (date-based)...")
+
+    with target_engine.connect() as conn:
+        # Fetch all records where a patient has multiple programs of the same type
+        query = text("""
+            SELECT pp.patient_program_id, pp.program_id, pi.patient_identifier_id, pi.patient_id, pi.identifier, pi.identifier_type, pi.patient_program_id AS existing_patient_program_id, pp.date_created AS program_date_created, pp.date_enrolled, pp.date_completed, pi.date_created AS identifier_date_created
+            FROM patient_program pp
+            INNER JOIN patient_identifier pi ON pi.patient_id = pp.patient_id
+            WHERE pp.patient_id IN (
+                SELECT t.patient_id
+                FROM patient_identifier t
+                WHERE t.identifier_type IN (2, 5)
+                    AND t.voided = 0
+                GROUP BY t.patient_id, t.identifier_type
+                HAVING COUNT(*) > 1
+            )
+                AND pi.identifier_type IN (2, 5)
+                AND pi.patient_program_id IS NULL
+                AND pi.voided = 0
+                AND pp.voided = 0
+                ORDER BY pi.patient_identifier_id, pp.patient_program_id
+        """)
+
+        result = conn.execution_options(yield_per=BATCH_SIZE).execute(query)
+        complex_records = result.fetchall()
+
+    if complex_records:
+        info(f"Found {len(complex_records)} complex records requiring date-based matching...")
+
+        # Group records by patient_identifier_id to process each identifier once
+        identifiers_to_update = {}  # {patient_identifier_id: patient_program_id}
+
+        for record in complex_records:
+            patient_identifier_id = record.patient_identifier_id
+            patient_program_id = record.patient_program_id
+            identifier_date = record.identifier_date_created
+            program_date = record.program_date_created
+
+            # Skip if already assigned in this batch
+            if patient_identifier_id in identifiers_to_update:
+                existing_program_id = identifiers_to_update[patient_identifier_id]
+                # Keep the one with closest date match
+                existing_record = next(
+                    (r for r in complex_records
+                     if r.patient_identifier_id == patient_identifier_id
+                     and r.patient_program_id == existing_program_id),
+                    None
+                )
+                if existing_record:
+                    existing_program_date = existing_record.program_date_created
+                    existing_diff = abs((identifier_date - existing_program_date).total_seconds())
+                    current_diff = abs((identifier_date - program_date).total_seconds())
+
+                    if current_diff < existing_diff:
+                        identifiers_to_update[patient_identifier_id] = patient_program_id
+            else:
+                # First match for this identifier
+                identifiers_to_update[patient_identifier_id] = patient_program_id
+
+        # Batch update the identifiers with their matched programs
+        update_batch = []
+        for patient_identifier_id, patient_program_id in identifiers_to_update.items():
+            update_batch.append({
+                "patient_identifier_id": patient_identifier_id,
+                "patient_program_id": patient_program_id
+            })
+
+        if update_batch:
+            batch_number = 1
+            with target_engine.connect() as conn:
+                for i in range(0, len(update_batch), BATCH_SIZE):
+                    batch = update_batch[i:i + BATCH_SIZE]
+                    update_query = text("""
+                        UPDATE patient_identifier
+                        SET patient_program_id = :patient_program_id
+                        WHERE patient_identifier_id = :patient_identifier_id
+                    """)
+                    conn.execute(update_query, batch)
+                    conn.commit()
+                    info(f"    Updated batch {batch_number} of {len(batch)} complex identifier-program links")
+                    batch_number += 1
+
+        info(f"Complex case matching completed: {len(identifiers_to_update)} identifiers linked")
+    else:
+        info(f"No complex cases found (all simple cases already handled)")
+
+    info(f"Link patient_identifier to patient_program completed (Total Time: {time.time() - start_time:.2f} seconds)")
 
 def load_patient_group():
     start_time = time.time()
