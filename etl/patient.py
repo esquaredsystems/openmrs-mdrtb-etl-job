@@ -176,6 +176,51 @@ def extract_patient_program(drop_create=False):
         warning("No data found in source patient_program table.")
 
 
+def extract_patient_state(drop_create=False):
+    source_engine = get_source_engine()
+    target_engine = get_target_engine()
+    if drop_create or not table_exists(target_engine, '_patient_state'):
+        create_patient_state_table(target_engine, drop_create=drop_create)
+    info("Fetching data from source patient_state table...")
+    with target_engine.connect() as target_conn:
+        target_conn.execute(text("TRUNCATE TABLE _patient_state"))
+        target_conn.commit()
+
+    insert_query = text(
+        "INSERT INTO _patient_state (patient_state_id, patient_program_id, state, start_date, end_date, creator, date_created, changed_by, date_changed, voided, voided_by, date_voided, void_reason, uuid) VALUES (:patient_state_id, :patient_program_id, :state, :start_date, :end_date, :creator, :date_created, :changed_by, :date_changed, :voided, :voided_by, :date_voided, :void_reason, :uuid)")
+
+    with source_engine.connect() as source_conn:
+        result = source_conn.execution_options(yield_per=BATCH_SIZE).execute(text("SELECT * FROM patient_state"))
+        batch = []
+        count = 0
+        batch_number = 1
+        with target_engine.connect() as target_conn:
+            for row in result:
+                batch.append({
+                    "patient_state_id": row.patient_state_id, "patient_program_id": row.patient_program_id,
+                    "state": row.state, "start_date": row.start_date, "end_date": row.end_date,
+                    "creator": row.creator, "date_created": row.date_created, "changed_by": row.changed_by,
+                    "date_changed": row.date_changed, "voided": row.voided, "voided_by": row.voided_by,
+                    "date_voided": row.date_voided, "void_reason": row.void_reason, "uuid": row.uuid
+                })
+                count += 1
+                if len(batch) >= BATCH_SIZE:
+                    info(f"Inserting batch {batch_number} of {len(batch)} records into target _patient_state table...")
+                    target_conn.execute(insert_query, batch)
+                    target_conn.commit()
+                    batch = []
+                    batch_number += 1
+            if batch:
+                info(f"Inserting final batch of {len(batch)} records into target _patient_state table...")
+                target_conn.execute(insert_query, batch)
+                target_conn.commit()
+
+    if count > 0:
+        info(f"Import completed successfully. Total {count} records imported.")
+    else:
+        warning("No data found in source patient_state table.")
+
+
 def extract_person(drop_create=False):
     source_engine = get_source_engine()
     target_engine = get_target_engine()
@@ -406,6 +451,8 @@ def extract_patient_group(drop_create):
     info("Patient identifier type table created successfully")
     extract_patient_program(drop_create=drop_create)
     info("Patient program table created successfully")
+    extract_patient_state(drop_create=drop_create)
+    info("Patient state table created successfully")
     extract_person(drop_create=drop_create)
     info("Person table created successfully")
     extract_person_address(drop_create=drop_create)
@@ -587,6 +634,32 @@ def load_patient_program():
     info(f"Load patient_program completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
 
+def load_patient_state():
+    start_time = time.time()
+    target_engine = get_target_engine()
+    with target_engine.connect() as conn:
+        info("Loading data for patient_state table...")
+        conn.execute(text("""
+        INSERT IGNORE INTO patient_state (patient_state_id, patient_program_id, state, start_date, end_date, creator, date_created, changed_by, date_changed, voided, voided_by, date_voided, void_reason, uuid)
+        SELECT patient_state_id, patient_program_id, state, start_date, end_date, creator, date_created, changed_by, date_changed, voided, voided_by, date_voided, void_reason, uuid FROM _patient_state
+        ON DUPLICATE KEY UPDATE
+            patient_program_id = VALUES(patient_program_id),
+            state = VALUES(state),
+            start_date = VALUES(start_date),
+            end_date = VALUES(end_date),
+            creator = VALUES(creator),
+            date_created = VALUES(date_created),
+            changed_by = VALUES(changed_by),
+            date_changed = VALUES(date_changed),
+            voided = VALUES(voided),
+            voided_by = VALUES(voided_by),
+            date_voided = VALUES(date_voided),
+            void_reason = VALUES(void_reason)
+        """))
+        conn.commit()
+    info(f"Load patient_state completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
+
+
 def load_patient_group():
     start_time = time.time()
     load_person()
@@ -598,4 +671,5 @@ def load_patient_group():
     load_patient_identifier_type()
     load_patient_identifier()
     load_patient_program()
+    load_patient_state()
     info(f"Load patient group completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
