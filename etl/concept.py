@@ -6,6 +6,7 @@ import pandas as pd
 
 from config.database import get_source_engine, get_target_engine
 from models.schema_models import *
+from tests.conftest import target_conn
 from utils.helpers import (get_concept_data, get_concept_map_data,
                            get_concept_name_data, get_concept_source_data, get_concept_set_data)
 from utils.logger import info, warning
@@ -442,12 +443,12 @@ def extract_concept_reference_term(drop_create=False):
     if drop_create or not table_exists(target_engine, '_concept_reference_term'):
         create_concept_reference_term_table(target_engine, drop_create=drop_create)
     select_sql = """
-    SELECT DISTINCT cm.concept_map_id AS concept_reference_term_id, cm.source AS concept_source_id, NULL AS name,
+    SELECT DISTINCT cm.concept_map_id AS concept_reference_term_id, cm.source AS concept_source_id, cn.name AS name,
     cm.concept_id AS code, 1.0 AS version, cm.comment AS description, cm.creator, cm.date_created,
     NULL AS date_changed, NULL AS changed_by, 0 AS retired, NULL AS retired_by, NULL AS date_retired, NULL AS retire_reason, cm.uuid
     FROM _concept_map AS cm
     INNER JOIN _concept_reference_source AS cs ON cs.concept_source_id = cm.source
-    INNER JOIN _concept_name AS cn ON cn.concept_id = cm.concept_id AND cn.locale = 'en'
+    INNER JOIN _concept_name AS cn ON cn.concept_id = cm.concept_id AND cn.locale = 'en' and cn.concept_name_type = 'FULLY_SPECIFIED' 
     ORDER BY concept_reference_term_id
     """
     with target_engine.connect() as target_conn:
@@ -646,6 +647,24 @@ def load_concept_reference_term():
     info(f"Load concept_reference_term completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
 
+def load_concept_reference_map():
+    start_time = time.time()
+    target_engine = get_target_engine()
+    select_insert_sql = """
+    INSERT INTO concept_reference_map (concept_reference_term_id, concept_map_type_id, creator, date_created, concept_id, uuid)
+    SELECT crt.concept_reference_term_id, cmt.concept_map_type_id, crt.creator, crt.date_created, c.concept_id, UUID() AS uuid
+    FROM concept_reference_term crt
+    INNER JOIN concept_map_type cmt ON cmt.name = 'SAME-AS'
+    INNER JOIN concept c ON c.concept_id = crt.code
+    """
+    with target_engine.connect() as target_conn:
+        info("Loading data for concept_reference_map table...")
+        target_conn.execute(text("TRUNCATE TABLE concept_reference_map"))
+        target_conn.execute(text(select_insert_sql))
+        target_conn.commit()
+    info(f"Load concept_reference_map completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
+
+
 def load_concept_map_tag():
     start_time = time.time()
     target_engine = get_target_engine()
@@ -682,6 +701,7 @@ def load_concept_group():
     load_concept_name_tag()
     load_concept_reference_source()
     load_concept_reference_term()
+    load_concept_reference_map()
     load_concept_answer()
     load_concept_complex()
     load_concept_name()
