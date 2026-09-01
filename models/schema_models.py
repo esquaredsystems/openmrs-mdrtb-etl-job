@@ -458,6 +458,15 @@ def create_patient_program_table(engine, drop_create=False):
         conn.commit()
 
 
+def create_patient_state_table(engine, drop_create=False):
+    with engine.connect() as conn:
+        if drop_create:
+            conn.execute(text("DROP TABLE IF EXISTS _patient_state"))
+        create_query = "CREATE TABLE IF NOT EXISTS _patient_state (patient_state_id int(10) NOT NULL, patient_program_id int(10) NOT NULL, state int(10) NOT NULL, start_date datetime, end_date datetime, creator int(10) NOT NULL, date_created datetime NOT NULL, changed_by int(10), date_changed datetime, voided tinyint(1) NOT NULL, voided_by int(10), date_voided datetime, void_reason varchar(255), uuid char(38) NOT NULL, PRIMARY KEY (patient_state_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        conn.execute(text(create_query))
+        conn.commit()
+
+
 def create_patient_table(engine, drop_create=False):
     with engine.connect() as conn:
         if drop_create:
