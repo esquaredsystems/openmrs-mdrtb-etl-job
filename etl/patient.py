@@ -665,7 +665,7 @@ def link_patient_identifiers_to_programs(target_engine):
                 AND pi.voided = 0
                 AND pp.voided = 0
         """))
-        result1 = conn.info.last_executed
+
         conn.commit()
         info(f"Linked identifier_type 2 → program_id 2")
 
