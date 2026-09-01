@@ -148,11 +148,14 @@ def load_labtest_sample():
     start_time = time.time()
     target_engine = get_target_engine()
     insert_labtest_sample_sql = """
-        INSERT IGNORE INTO labtest_sample (
+        INSERT INTO labtest_sample (
             test_order_id, specimen_type, specimen_site, is_expirable, lab_sample_identifier, collector, status, creator, date_created, collection_date, processed_date, uuid
         )
-        SELECT test_order_id, 61 AS specimen_type, 491 AS specimen_site, 0, UUID() AS lab_sample_identifier, creator, 'PROCESSED', creator, date_created, date_created, date_created, UUID() FROM labtest_test
-        WHERE voided = 0
+        SELECT lt.test_order_id, 61 AS specimen_type, 491 AS specimen_site, 0, UUID() AS lab_sample_identifier, lt.creator, 'PROCESSED', lt.creator, lt.date_created, lt.date_created, lt.date_created, UUID()
+        FROM labtest_test AS lt
+        WHERE lt.voided = 0 AND NOT EXISTS (
+          SELECT 1 FROM labtest_sample AS ls WHERE ls.test_order_id = lt.test_order_id AND ls.date_created = lt.date_created
+        )
     """
     with target_engine.connect() as conn:
         info("Loading data for labtest_sample table...")
