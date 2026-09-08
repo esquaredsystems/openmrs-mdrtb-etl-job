@@ -68,18 +68,7 @@ def get_location_data():
     return df
 
 def get_message_properties(language):
-    # Expected columns: Key	Value
+    """Return message keys and translations for the requested language."""
     assert language in ['en', 'ru', 'tj']
-    # 'ru' and 'tj' sheets in message.properties.xlsx do not have headers, but 'en' does.
-    if language in ['ru', 'tj']:
-        df = read_excel_sheet('message.properties.xlsx', language)
-        if not df.empty:
-            # Re-read with header=None if the first row contains data (which is the case for ru and tj)
-            excel_path = os.path.join('resources', 'message.properties.xlsx')
-            df = pd.read_excel(excel_path, sheet_name=language, header=None)
-            df.columns = ['Key', 'Value']
-            # Convert NaN to None for database compatibility as in read_excel_sheet
-            df = df.where(pd.notnull(df), None)
-            return df
-    df = read_excel_sheet('message.properties.xlsx', language)
-    return df
+    df = read_excel_sheet('message.properties.xlsx', 'translations')
+    return df[['Key', language]].rename(columns={language: 'Value'})
