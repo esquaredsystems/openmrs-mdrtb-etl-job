@@ -7,7 +7,7 @@ import pandas as pd
 from config.database import get_source_engine, get_target_engine
 from models.schema_models import *
 from tests.conftest import target_conn
-from utils.helpers import (get_concept_data, get_concept_map_data,
+from utils.helpers import (get_concept_data, get_concept_map_data, get_concept_answer_data,
                            get_concept_name_data, get_concept_source_data, get_concept_set_data)
 from utils.logger import info, warning
 
@@ -44,32 +44,33 @@ def extract_concept(drop_create=False):
 
 
 def extract_concept_answer(drop_create=False):
-    source_engine = get_source_engine()
     target_engine = get_target_engine()
     if drop_create or not table_exists(target_engine, '_concept_answer'):
         create_concept_answer_table(target_engine, drop_create=drop_create)
-    info("Fetching data from source concept_answer table...")
-    with source_engine.connect() as source_conn:
-        source_data = source_conn.execute(text("SELECT * FROM concept_answer")).fetchall()
-    if source_data:
+
+    df = get_concept_answer_data()
+    if not df.empty:
         with target_engine.connect() as target_conn:
             target_conn.execute(text("TRUNCATE TABLE _concept_answer"))
             target_conn.commit()
 
-        info(f"Inserting {len(source_data)} records into target _concept_answer table...")
+        info(
+            f"Inserting {len(df)} records from concept_mapping.xlsx concept_answer sheet into target _concept_answer table...")
+        df = df.replace({np.nan: None, pd.NaT: None})
+        df["answer_drug"] = None
+        df["creator"] = 1
+        source_data = df[[
+            "concept_answer_id", "concept_id", "answer_concept", "answer_drug", "creator",
+            "date_created", "sort_weight", "uuid"
+        ]].to_dict(orient='records')
         insert_query = text(
             "INSERT INTO _concept_answer (concept_answer_id, concept_id, answer_concept, answer_drug, creator, date_created, sort_weight, uuid) VALUES (:concept_answer_id, :concept_id, :answer_concept, :answer_drug, :creator, :date_created, :sort_weight, :uuid)")
         with target_engine.connect() as target_conn:
-            for row in source_data:
-                target_conn.execute(insert_query, {
-                    "concept_answer_id": row.concept_answer_id, "concept_id": row.concept_id,
-                    "answer_concept": row.answer_concept, "answer_drug": row.answer_drug, "creator": row.creator,
-                    "date_created": row.date_created, "sort_weight": '1', "uuid": row.uuid
-                })
+            target_conn.execute(insert_query, source_data)
             target_conn.commit()
-        info("Import completed successfully.")
+        info("Import from concept_mapping.xlsx concept_answer sheet completed successfully.")
     else:
-        warning("No data found in source concept_answer table.")
+        warning("No data found in concept_answer sheet of concept_mapping.xlsx.")
 
 
 def extract_concept_class(drop_create=False):

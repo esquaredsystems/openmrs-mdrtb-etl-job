@@ -42,6 +42,11 @@ def get_concept_map_data():
     df = read_excel_sheet('concept_mapping.xlsx', 'concept_map')
     return df
 
+def get_concept_answer_data():
+    # Expected columns: concept_answer_id	concept_id	answer_concept	date_created	sort_weight	uuid
+    df = read_excel_sheet('concept_mapping.xlsx', 'concept_answer')
+    return df
+
 def get_concept_name_data():
     # Expected columns: concept_id	name	locale	type
     df = read_excel_sheet('concept_mapping.xlsx', 'concept_name')
