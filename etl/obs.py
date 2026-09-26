@@ -1,7 +1,7 @@
 import time
 from datetime import date
 
-from config.config import BATCH_SIZE
+from config.config import BATCH_SIZE, CUTOFF_DATE
 from config.database import get_source_engine, get_target_engine, set_foreign_key_checks
 from models.schema_models import *
 from utils.logger import info, warning
@@ -66,6 +66,8 @@ def extract_obs_group(drop_create):
 def load_obs(resume=False):
     start_time = time.time()
     target_engine = get_target_engine()
+    # Cutoff: obs follow their encounter (only obs of encounters already loaded into the cutoff-filtered target
+    # `encounter` table), and any obs created/voided on/after CUTOFF_DATE is kept on its own (an edit is a new obs row).
     select_insert_sql = """
     INSERT IGNORE INTO obs (
         obs_id, person_id, concept_id, encounter_id, order_id, obs_datetime, location_id,
@@ -82,13 +84,18 @@ def load_obs(resume=False):
             WHEN value_boolean = 0 THEN 0
             ELSE value_coded
         END,
-        value_coded_name_id, value_drug, value_datetime, value_numeric, 
-        value_modifier, value_text, value_complex, comments, creator, date_created, 
+        value_coded_name_id, value_drug, value_datetime, value_numeric,
+        value_modifier, value_text, value_complex, comments, creator, date_created,
         voided, voided_by, date_voided, void_reason, uuid
     FROM _obs
     WHERE date_created <= CURRENT_DATE()
       AND date_created >= :date_start
       AND date_created < :date_end
+      AND (
+            (encounter_id IS NOT NULL AND EXISTS (SELECT 1 FROM encounter e WHERE e.encounter_id = _obs.encounter_id))
+         OR YEAR(date_created) >= YEAR(:cutoff_date)
+         OR YEAR(date_voided) >= YEAR(:cutoff_date)
+      )
     """
 
     with target_engine.connect() as conn:
@@ -114,6 +121,7 @@ def load_obs(resume=False):
                 params = {
                     "date_start": date_start,
                     "date_end": date_end,
+                    "cutoff_date": CUTOFF_DATE,
                 }
 
                 info(f"Loading obs records for year {year} (from {date_start} to {date_end})...")

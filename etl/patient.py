@@ -587,6 +587,7 @@ def load_patient_identifier():
         conn.execute(text("""
         INSERT IGNORE INTO patient_identifier (patient_identifier_id, patient_id, identifier, identifier_type, preferred, location_id, creator, date_created, date_changed, changed_by, voided, voided_by, date_voided, void_reason, uuid)
         SELECT patient_identifier_id, patient_id, identifier, identifier_type, preferred, location_id, creator, date_created, date_changed, changed_by, voided, voided_by, date_voided, void_reason, uuid FROM _patient_identifier
+        WHERE NOT EXISTS (SELECT 1 FROM patient cp WHERE cp.patient_id = _patient_identifier.patient_id AND cp.void_reason LIKE 'Data cutoff:%')
         ON DUPLICATE KEY UPDATE
             patient_id = VALUES(patient_id),
             identifier = VALUES(identifier),
@@ -615,6 +616,7 @@ def load_patient_program():
         conn.execute(text("""
         INSERT IGNORE INTO patient_program (patient_program_id, patient_id, program_id, date_enrolled, date_completed, location_id, outcome_concept_id, creator, date_created, changed_by, date_changed, voided, voided_by, date_voided, void_reason, uuid)
         SELECT patient_program_id, patient_id, program_id, date_enrolled, date_completed, location_id, outcome_concept_id, creator, date_created, changed_by, date_changed, voided, voided_by, date_voided, void_reason, uuid FROM _patient_program
+        WHERE NOT EXISTS (SELECT 1 FROM patient cp WHERE cp.patient_id = _patient_program.patient_id AND cp.void_reason LIKE 'Data cutoff:%')
         ON DUPLICATE KEY UPDATE
             program_id = VALUES(program_id),
             date_enrolled = VALUES(date_enrolled),
@@ -779,6 +781,7 @@ def load_patient_state():
         conn.execute(text("""
         INSERT IGNORE INTO patient_state (patient_state_id, patient_program_id, state, start_date, end_date, creator, date_created, changed_by, date_changed, voided, voided_by, date_voided, void_reason, uuid)
         SELECT patient_state_id, patient_program_id, state, start_date, end_date, creator, date_created, changed_by, date_changed, voided, voided_by, date_voided, void_reason, uuid FROM _patient_state
+        WHERE NOT EXISTS (SELECT 1 FROM patient_program cpp JOIN patient cp ON cp.patient_id = cpp.patient_id WHERE cpp.patient_program_id = _patient_state.patient_program_id AND cp.void_reason LIKE 'Data cutoff:%')
         ON DUPLICATE KEY UPDATE
             patient_program_id = VALUES(patient_program_id),
             state = VALUES(state),

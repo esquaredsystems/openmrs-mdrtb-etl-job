@@ -3,6 +3,7 @@ import sys
 from etl.address_hierarchy import *
 from etl.cohort import *
 from etl.concept import *
+from etl.cutoff import run_cutoff_reconcile, run_data_cutoff
 from etl.drug import *
 from etl.encounter import *
 from etl.fk_check import *
@@ -95,6 +96,8 @@ def run_load_job():
     load_patient_group()
     load_encounter_group()
     load_obs_group()
+    # Idempotent: re-voids/un-voids patients after the loads may have overwritten voided flags or added activity.
+    run_cutoff_reconcile()
     load_orders_group()
     # Must run after load_orders_group(): drug_order.order_id -> orders.order_id
     # (drug orders are inserted into `orders` inside load_orders_group()).
@@ -204,6 +207,14 @@ if __name__ == "__main__":
     parser.add_argument("--check-integrity", action="store_true",
                         help="Scan the target database for foreign key violations (read-only). "
                              "Run alone to check only; combine with --extract/--load to check afterwards")
+    parser.add_argument("--cutoff-dry-run", action="store_true",
+                        help="Install the cutoff stored procedures and run them in dry-run mode "
+                             "(fills the _target_* id tables and _cutoff_log, changes no OpenMRS data)")
+    parser.add_argument("--apply-cutoff", action="store_true",
+                        help="Run the cutoff stored procedure for real: DELETES pre-cutoff encounters/obs/orders/lab "
+                             "rows and VOIDS inactive patients. Irreversible - back up first")
+    parser.add_argument("--force-cutoff", action="store_true",
+                        help="Allow --apply-cutoff to run again after it has already completed once")
     args = parser.parse_args()
 
     info("Connecting to source database...")
@@ -227,6 +238,11 @@ if __name__ == "__main__":
         if args.load:
             run_load_job()
         post_etl_job()
+
+    if args.apply_cutoff:
+        run_data_cutoff(dry_run=False, force=args.force_cutoff)
+    elif args.cutoff_dry_run:
+        run_data_cutoff(dry_run=True)
 
     if args.check_integrity:
         run_fk_check()

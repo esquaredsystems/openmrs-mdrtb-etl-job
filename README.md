@@ -72,6 +72,8 @@ python main.py --extract --load
 | --- | --- |
 | Extraction only | `python main.py --extract` |
 | Loading only | `python main.py --load` |
+| Cutoff dry run (no data changed) | `python main.py --cutoff-dry-run` |
+| Cutoff apply (one-time, deletes/voids) | `python main.py --apply-cutoff` |
 
 ### Hard Reset
 
@@ -85,6 +87,65 @@ python main.py --extract --hard-reset
 ```bash
 docker run --env-file .env openmrs-mdrtb-etl-job
 ```
+
+## Data Cutoff (`--cutoff-dry-run` / `--apply-cutoff`)
+
+The client only wants data from **year > 2020** (on/after `2021-01-01`, set as `CUTOFF_DATE` in `config/config.py`)
+in the target database. `--hard-reset` only rebuilds the `_`-prefixed staging tables, so data already in the target is
+cleaned up once by the stored procedure `sp_apply_data_cutoff` (`models/sp_apply_data_cutoff.sql`), and the normal
+ETL then keeps the database compliant on every later run.
+
+| Part | When it runs |
+| --- | --- |
+| `--cutoff-dry-run` | On demand. Changes no OpenMRS data. |
+| `--apply-cutoff` | **Once.** Deletes pre-cutoff rows and voids inactive patients. |
+| Load filters (`load_encounter`, `load_obs`, patient upserts) | Every `--load`, so purged rows are never re-inserted. |
+| `sp_cutoff_reconcile_patients` | Every `--load` (after obs are loaded). Idempotent: a second run changes nothing. |
+
+### Rules
+
+- An **encounter** is kept if any of `date_created`, `date_changed`, `date_voided` or `encounter_datetime` is on/after
+  the cutoff, **or any of its obs was created/voided on/after the cutoff**. Obs are never edited in place - an edit
+  inserts a new obs row that points at the old one through `previous_version` - so a recent edit keeps its encounter.
+  Otherwise the encounter is **deleted**.
+- `obs`, `orders`, `drug_order`, `labtest_test`, `labtest_sample`, `labtest_attribute` and `encounter_provider`
+  **follow their encounter**. An obs with no encounter is judged by its own `date_created` / `date_voided`, and is kept
+  if a kept obs points at it or it points at a kept obs (`obs_group_id`, `previous_version`), so groups and edit chains
+  are never split.
+- A **patient** is **voided, never deleted** (`patient`, `person`, `person_name`, `person_address`,
+  `person_attribute`, `patient_identifier`, `patient_program`, `patient_state`) when it has no encounter left, no
+  encounter-less obs, and its own dates are before the cutoff. Person/patient `1` and anyone in `users` or `provider`
+  are never voided.
+- The reconcile step also **un-voids** patients that became active again (for example a new encounter arrived in the
+  source). It only touches rows it voided itself (`void_reason` starting with `Data cutoff:`), never rows voided in the
+  source system.
+- Kept rows that pointed at a deleted row (`obs.order_id`, `obs.obs_group_id`, `obs.previous_version`,
+  `orders.previous_order_id`, `patient_state.encounter_id`) are set to `NULL`.
+
+### Dry run
+
+```bash
+python main.py --cutoff-dry-run
+```
+
+Installs the stored procedures, identifies what would be deleted / voided into the `_target_encounter_id`,
+`_target_order_id`, `_target_obs_id` and `_target_patient_id` tables, and writes counts to `_cutoff_log` (also logged,
+and available with `SELECT * FROM _cutoff_log ORDER BY id`). The rows named `kept row -> deleted row` show how many
+kept rows point across the cutoff boundary and will be set to `NULL`. Review the counts before applying.
+
+### Apply (one time)
+
+```bash
+python main.py --apply-cutoff
+```
+
+**Irreversible.** Take a `mysqldump` backup of the target first. Deletes run child-first in batches of `BATCH_SIZE`
+with a commit per batch. **Foreign key checks stay on**: deletes use `DELETE IGNORE` in repeated passes, so a row that
+is still referenced by another row is skipped and retried instead of being orphaned. Anything still blocked after the
+passes is reported as `BLOCKED (still referenced)` and the run is recorded as `apply_INCOMPLETE`; fix the cause and
+run it again. On success it records `apply_complete` in `_cutoff_log`, and another `--apply-cutoff` is refused unless
+`--force-cutoff` is also passed. Afterwards verify with `models/verify_cutoff.sql` (every "Expect 0" query must
+return 0). The database user needs the `CREATE ROUTINE` privilege.
 
 ## Foreign Key Violation Check
 

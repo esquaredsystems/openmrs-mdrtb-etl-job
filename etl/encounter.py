@@ -1,6 +1,6 @@
 import time
 
-from config.config import BATCH_SIZE
+from config.config import BATCH_SIZE, CUTOFF_DATE
 from config.database import get_source_engine, get_target_engine
 from models.schema_models import *
 from utils.logger import info, warning
@@ -136,39 +136,61 @@ def load_encounter():
     start_time = time.time()
     target_engine = get_target_engine()
     info("Loading data for encounter table...")
+    # Cutoff: only keep encounters created, changed, voided or held (encounter_datetime) on/after CUTOFF_DATE.
+    # Anything entirely before the cutoff is excluded from the target `encounter` table.
+    cutoff_clause = """
+        (YEAR(date_created) >= YEAR(:cutoff_date)
+         OR YEAR(date_changed) >= YEAR(:cutoff_date)
+         OR YEAR(date_voided) >= YEAR(:cutoff_date)
+         OR YEAR(encounter_datetime) >= YEAR(:cutoff_date)
+         OR encounter_id IN (SELECT encounter_id FROM _recent_obs_encounter))
+    """
     with target_engine.connect() as conn:
+        # obs are never edited in place (an edit inserts a new obs row), so an encounter with a recent obs must be kept
+        conn.execute(text("DROP TEMPORARY TABLE IF EXISTS _recent_obs_encounter"))
+        conn.execute(text("""
+            CREATE TEMPORARY TABLE _recent_obs_encounter (encounter_id INT NOT NULL PRIMARY KEY)
+            AS SELECT DISTINCT encounter_id FROM _obs
+               WHERE encounter_id IS NOT NULL AND (date_created >= :cutoff_date OR date_voided >= :cutoff_date)
+        """), {"cutoff_date": CUTOFF_DATE})
         # INSERT IGNORE for records with date_created NOT in current year
-        total_old = conn.execute(text("SELECT COUNT(*) FROM _encounter WHERE YEAR(date_created) < YEAR(CURRENT_TIMESTAMP())")).scalar()
+        total_old = conn.execute(text(f"""
+            SELECT COUNT(*) FROM _encounter
+            WHERE YEAR(date_created) < YEAR(CURRENT_TIMESTAMP()) AND {cutoff_clause}
+        """), {"cutoff_date": CUTOFF_DATE}).scalar()
         offset = 0
         batch_number = 1
         while offset < total_old:
-            conn.execute(text("""
+            conn.execute(text(f"""
                 INSERT IGNORE INTO encounter (encounter_id, encounter_type, patient_id, location_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid)
                 SELECT encounter_id, encounter_type, patient_id, location_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid
                 FROM _encounter
-                WHERE YEAR(date_created) < YEAR(CURRENT_TIMESTAMP())
+                WHERE YEAR(date_created) < YEAR(CURRENT_TIMESTAMP()) AND {cutoff_clause}
                 ORDER BY encounter_id
                 LIMIT :limit OFFSET :offset
-            """), {"limit": BATCH_SIZE, "offset": offset})
+            """), {"limit": BATCH_SIZE, "offset": offset, "cutoff_date": CUTOFF_DATE})
             conn.commit()
             info(f"[historical] Batch {batch_number}: inserted up to {min(offset + BATCH_SIZE, total_old)} of {total_old} records")
             offset += BATCH_SIZE
             batch_number += 1
 
         # UPSERT for records with date_created in current year (but do NOT reset uuid)
-        total_current = conn.execute(text("SELECT COUNT(*) FROM _encounter WHERE YEAR(date_created) >= YEAR(CURRENT_TIMESTAMP())")).scalar()
+        total_current = conn.execute(text(f"""
+            SELECT COUNT(*) FROM _encounter
+            WHERE YEAR(date_created) >= YEAR(CURRENT_TIMESTAMP()) AND {cutoff_clause}
+        """), {"cutoff_date": CUTOFF_DATE}).scalar()
         conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
         conn.commit()
         offset = 0
         batch_number = 1
         while offset < total_current:
-            conn.execute(text("""
+            conn.execute(text(f"""
                 INSERT INTO encounter (encounter_id, encounter_type, patient_id, location_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid)
                 SELECT encounter_id, encounter_type, patient_id, location_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid
                 FROM (
                     SELECT encounter_id, encounter_type, patient_id, location_id, encounter_datetime, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid
                     FROM _encounter
-                    WHERE YEAR(date_created) >= YEAR(CURRENT_TIMESTAMP())
+                    WHERE YEAR(date_created) >= YEAR(CURRENT_TIMESTAMP()) AND {cutoff_clause}
                     ORDER BY encounter_id
                     LIMIT :limit OFFSET :offset
                 ) batch
@@ -186,7 +208,7 @@ def load_encounter():
                     void_reason = VALUES(void_reason),
                     changed_by = VALUES(changed_by),
                     date_changed = VALUES(date_changed)
-            """), {"limit": BATCH_SIZE, "offset": offset})
+            """), {"limit": BATCH_SIZE, "offset": offset, "cutoff_date": CUTOFF_DATE})
             conn.commit()
             info(f"[current year] Batch {batch_number}: upserted up to {min(offset + BATCH_SIZE, total_current)} of {total_current} records")
             offset += BATCH_SIZE
@@ -201,9 +223,13 @@ def load_encounter_provider():
     target_engine = get_target_engine()
     with target_engine.connect() as conn:
         info("Loading data for encounter_provider table...")
+        # Join against the already-cutoff-filtered target `encounter` table so rows for
+        # encounters excluded by the cutoff are not inserted (would otherwise violate the FK).
         conn.execute(text("""
             INSERT IGNORE INTO encounter_provider (encounter_id, provider_id, encounter_role_id, creator, date_created, changed_by, date_changed, voided, date_voided, voided_by, void_reason, uuid)
-            SELECT encounter_id, provider_id, encounter_role_id, creator, date_created, changed_by, date_changed, voided, date_voided, voided_by, void_reason, uuid FROM _encounter_provider
+            SELECT ep.encounter_id, ep.provider_id, ep.encounter_role_id, ep.creator, ep.date_created, ep.changed_by, ep.date_changed, ep.voided, ep.date_voided, ep.voided_by, ep.void_reason, ep.uuid
+            FROM _encounter_provider ep
+            INNER JOIN encounter e ON e.encounter_id = ep.encounter_id
         """))
         conn.commit()
     info(f"Load encounter_provider completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
