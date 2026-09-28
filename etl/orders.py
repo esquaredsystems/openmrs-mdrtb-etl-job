@@ -97,13 +97,19 @@ def load_order_type():
 def load_order():
     start_time = time.time()
     target_engine = get_target_engine()
-    truncate_orders_sql = "TRUNCATE orders"
+    # NOTE: `orders` must NEVER be truncated here. order_id is captured by downstream tables
+    # (labtest_test.test_order_id, labtest_sample, labtest_attribute, drug_order.order_id) across
+    # separate --load runs. A truncate + full rebuild reassigns fresh auto-increment ids to every
+    # non-drug order on every run, silently orphaning all of those downstream rows the moment the
+    # underlying encounter set changes (e.g. after the data cutoff purge). Inserts below are
+    # idempotent instead: matched by their natural unique key (order_number, or the preserved
+    # order_id for drug orders) and upserted, so an order's id, once assigned, never changes again.
     insert_seed_order_sql = """
-        INSERT INTO orders (
+        INSERT IGNORE INTO orders (
             order_type_id, concept_id, orderer, encounter_id, instructions, date_activated, auto_expire_date, date_stopped, order_reason, order_reason_non_coded, creator, date_created, voided, voided_by, date_voided, void_reason, patient_id, accession_number, uuid, urgency, order_number, previous_order_id, order_action, comment_to_fulfiller, care_setting, scheduled_date, order_group_id, sort_weight, fulfiller_comment, fulfiller_status
-        ) VALUES (
-            1, 410, 3, 147521, NULL, '2017-05-04 00:00:00', NULL, NULL, NULL, NULL, 1, '2023-04-09 07:33:26', 0, NULL, NULL, NULL, 32072, NULL, '90ef1459-8b33-4a18-936e-2cfdfbe99649', 'ROUTINE', 'ORD-1', NULL, 'NEW', NULL, 1, NULL, NULL, NULL, NULL, NULL
         )
+        SELECT 1, 410, 3, 147521, NULL, '2017-05-04 00:00:00', NULL, NULL, NULL, NULL, 1, '2023-04-09 07:33:26', 0, NULL, NULL, NULL, 32072, NULL, '90ef1459-8b33-4a18-936e-2cfdfbe99649', 'ROUTINE', 'ORD-1', NULL, 'NEW', NULL, 1, NULL, NULL, NULL, NULL, NULL
+        WHERE EXISTS (SELECT 1 FROM encounter WHERE encounter_id = 147521)
     """
     insert_encounter_orders_sql = """
         INSERT INTO orders (
@@ -115,6 +121,13 @@ def load_order():
         INNER JOIN provider p ON p.person_id = u.person_id
         INNER JOIN concept_name cn ON cn.name = 'MICROSCOPY TEST CONSTRUCT' AND cn.locale = 'en' AND cn.concept_name_type = 'FULLY_SPECIFIED' AND cn.voided = 0
         WHERE e.encounter_type IN (5, 11)
+        ON DUPLICATE KEY UPDATE
+            -- matched via the unique order_number key (order_id is intentionally never touched)
+            voided = VALUES(voided),
+            voided_by = VALUES(voided_by),
+            date_voided = VALUES(date_voided),
+            void_reason = VALUES(void_reason),
+            date_activated = VALUES(date_activated)
     """
     # Load drug orders (order_type_id = 1) from the staging _orders table.
     # The original order_id is preserved so that drug_order.order_id (loaded later)
@@ -131,7 +144,7 @@ def load_order():
             creator, date_created, voided, voided_by, date_voided, void_reason,
             patient_id, accession_number, uuid, urgency, order_number, order_action, care_setting
         )
-        SELECT
+        SELECT -- order_id is preserved explicitly from staging, so this is already stable across runs
             o.order_id,
             o.order_type_id,
             o.concept_id,
@@ -163,6 +176,11 @@ def load_order():
         LEFT JOIN provider p ON p.person_id = u.person_id
         LEFT JOIN concept c ON c.concept_id = o.discontinued_reason
         WHERE o.order_type_id = 1
+        ON DUPLICATE KEY UPDATE
+            voided = VALUES(voided),
+            voided_by = VALUES(voided_by),
+            date_voided = VALUES(date_voided),
+            void_reason = VALUES(void_reason)
     """
     update_orders_creator_sql = """
         UPDATE orders
@@ -178,10 +196,6 @@ def load_order():
         info("Loading data for orders table...")
         conn.execute(text(f"SET FOREIGN_KEY_CHECKS = 0"))
         conn.commit()
-        conn.execute(text(truncate_orders_sql))
-        # Drug orders are inserted FIRST because they carry explicit (preserved) order_id
-        # values. The seed and encounter inserts below rely on AUTO_INCREMENT; inserting the
-        # explicit ids first advances the counter past them and avoids a primary-key collision.
         conn.execute(text(insert_drug_orders_sql))
         conn.execute(text(insert_seed_order_sql))
         conn.execute(text(insert_encounter_orders_sql))
