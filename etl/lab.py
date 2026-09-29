@@ -691,6 +691,7 @@ def load_labtest_attribute():
 
     with target_engine.connect() as conn:
         info("Loading data for labtest_attribute table...")
+        conn.execute(text("TRUNCATE TABLE labtest_attribute"))
         for query in insert_queries:
             info(f"Executing query: {query}")
             conn.execute(text(query))
