@@ -221,6 +221,11 @@ def load_labtest_attribute_type():
 def load_labtest_attribute():
     start_time = time.time()
     target_engine = get_target_engine()
+    TEXT_VALUE = (
+        "CASE WHEN CHAR_LENGTH(TRIM(o.value_text)) > 255 "
+        "THEN CONCAT(LEFT(TRIM(o.value_text), 250), '...') "
+        "ELSE TRIM(o.value_text) END"
+    )
     insert_sql_prefix = """
         INSERT IGNORE INTO labtest_attribute (
             test_attribute_id, test_order_id, attribute_type_id, value_reference, creator, date_created, voided, voided_by, date_voided, void_reason, uuid
@@ -243,7 +248,7 @@ def load_labtest_attribute():
             additional_joins="", group_name_clause="", additional_clause=""
         ),
         insert_sql_prefix.format(
-            value_reference="o.value_text", attribute_name="LABORATORY INVESTIGATION NUMBER", concept_id=428,
+            value_reference=TEXT_VALUE, attribute_name="LABORATORY INVESTIGATION NUMBER", concept_id=428,
             additional_joins="", group_name_clause="", additional_clause=" and o.obs_group_id is null"
         ),
         insert_sql_prefix.format(
@@ -252,8 +257,8 @@ def load_labtest_attribute():
             group_name_clause="", additional_clause=""
         ),
         insert_sql_prefix.format(
-            value_reference="o.value_text", attribute_name="REFERRING FACILITY", concept_id=498,
-            additional_joins="", group_name_clause="", additional_clause=" and length(o.value_text) < 255"
+            value_reference=TEXT_VALUE, attribute_name="REFERRING FACILITY", concept_id=498,
+            additional_joins="", group_name_clause="", additional_clause=""
         ),
         insert_sql_prefix.format(
             value_reference="c.uuid", attribute_name="REQUESTING MEDICAL FACILITY", concept_id=426,
@@ -270,15 +275,15 @@ def load_labtest_attribute():
             additional_joins="", group_name_clause="", additional_clause=""
         ),
         insert_sql_prefix.format(
-            value_reference="o.value_text", attribute_name="LAB SPECIALIST NAME", concept_id=611,
+            value_reference=TEXT_VALUE, attribute_name="LAB SPECIALIST NAME", concept_id=611,
             additional_joins="", group_name_clause="", additional_clause=""
         ),
         insert_sql_prefix.format(
-            value_reference="o.value_text", attribute_name="REFERRED BY", concept_id=497,
+            value_reference=TEXT_VALUE, attribute_name="REFERRED BY", concept_id=497,
             additional_joins="", group_name_clause="", additional_clause=""
         ),
         insert_sql_prefix.format(
-            value_reference="o.value_text", attribute_name="TUBERCULOSIS SPECIMEN COMMENTS", concept_id=149,
+            value_reference=TEXT_VALUE, attribute_name="TUBERCULOSIS SPECIMEN COMMENTS", concept_id=149,
             additional_joins="", group_name_clause="", additional_clause=""
         ),
 
@@ -300,7 +305,7 @@ def load_labtest_attribute():
             group_name_clause=" and tat.group_name = 'XPERT'", additional_clause=""
         ),
         insert_sql_prefix.format(
-            value_reference="o.value_text", attribute_name="ERROR CODE", concept_id=316,
+            value_reference=TEXT_VALUE, attribute_name="ERROR CODE", concept_id=316,
             additional_joins="inner join obs o3 on o3.obs_id = o.obs_group_id and o3.concept_id = 311",
             group_name_clause=" and tat.group_name = 'XPERT'", additional_clause=" and o.value_text regexp '^[0-9]*$'"
         ),
@@ -378,7 +383,7 @@ def load_labtest_attribute():
             group_name_clause=" and tat.group_name = 'HAIN'", additional_clause=""
         ),
         insert_sql_prefix.format(
-            value_reference="o.value_text", attribute_name="ERROR CODE", concept_id=316,
+            value_reference=TEXT_VALUE, attribute_name="ERROR CODE", concept_id=316,
             additional_joins="inner join obs o3 on o3.obs_id = o.obs_group_id and o3.concept_id = 323",
             group_name_clause=" and tat.group_name = 'HAIN'", additional_clause=" and o.value_text regexp '^[0-9]*$'"
         ),
@@ -472,7 +477,7 @@ def load_labtest_attribute():
             group_name_clause=" and tat.group_name = 'HAIN2'", additional_clause=""
         ),
         insert_sql_prefix.format(
-            value_reference="o.value_text", attribute_name="ERROR CODE", concept_id=316,
+            value_reference=TEXT_VALUE, attribute_name="ERROR CODE", concept_id=316,
             additional_joins="inner join obs o3 on o3.obs_id = o.obs_group_id and o3.concept_id = 414",
             group_name_clause=" and tat.group_name = 'HAIN2'", additional_clause=" and o.value_text regexp '^[0-9]*$'"
         ),
@@ -582,9 +587,9 @@ def load_labtest_attribute():
             group_name_clause=" and tat.group_name = 'CULTURE'", additional_clause=""
         ),
         insert_sql_prefix.format(
-            value_reference="o.value_text", attribute_name="TYPE OF ORGANISM NON-CODED", concept_id=123,
+            value_reference=TEXT_VALUE, attribute_name="TYPE OF ORGANISM NON-CODED", concept_id=123,
             additional_joins="inner join obs o3 on o3.obs_id = o.obs_group_id and o3.concept_id = 153",
-            group_name_clause=" and tat.group_name = 'CULTURE'", additional_clause=" and length(o.value_text) < 255"
+            group_name_clause=" and tat.group_name = 'CULTURE'", additional_clause=""
         ),
         insert_sql_prefix.format(
             value_reference="c.uuid", attribute_name="MGIT CULTURE RESULT", concept_id=519,
