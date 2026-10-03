@@ -108,7 +108,7 @@ def test_update_only_touches_active_rows():
 
 def test_update_only_changes_differing_values():
     """Keeps a rerun a no-op: rows already at the right level are not rewritten."""
-    assert "LA.VALUE_REFERENCE <> L.LEVEL" in _update_normalised()
+    assert "LA.VALUE_REFERENCE COLLATE UTF8MB4_BIN <> L.LEVEL COLLATE UTF8MB4_BIN" in _update_normalised()
 
 
 def test_update_matches_on_level_attribute_type():
@@ -182,3 +182,13 @@ def test_level_statements_update_the_parent():
     for query in build_location_upserts()[1:5]:
         update_clause = query.upper().split("ON DUPLICATE KEY UPDATE", 1)[1]
         assert "PARENT_LOCATION = VALUES(PARENT_LOCATION)" in update_clause
+
+
+def test_update_comparison_forces_a_collation():
+    """
+    On the server value_reference and _location.level have different collations
+    (general_ci vs unicode_ci); a bare <> raises MySQL error 1267.
+    """
+    sql = _update_normalised()
+    assert "LA.VALUE_REFERENCE <> L.LEVEL" not in sql
+    assert sql.count("COLLATE UTF8MB4_BIN") == 2

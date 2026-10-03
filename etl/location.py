@@ -137,7 +137,9 @@ def build_location_attribute_update():
         "SET la.value_reference = l.level, la.changed_by = 1, la.date_changed = current_timestamp() "
         "WHERE la.voided = 0 "
         "AND l.level IN :levels "
-        "AND la.value_reference <> l.level"
+        # Explicit collation: on the server value_reference is utf8mb4_general_ci and _location.level is
+        # utf8mb4_unicode_ci, and comparing them directly fails with "Illegal mix of collations"
+        "AND la.value_reference COLLATE utf8mb4_bin <> l.level COLLATE utf8mb4_bin"
     ).bindparams(bindparam("levels", expanding=True))
 
 
@@ -191,7 +193,7 @@ def verify_location_attribute():
         "INNER JOIN location_attribute_type AS lat ON lat.name = 'LEVEL' "
         "LEFT JOIN location_attribute AS la ON la.location_id = l.location_id "
         "    AND la.attribute_type_id = lat.location_attribute_type_id AND la.voided = 0 "
-        "WHERE l.level IN :levels AND (la.value_reference IS NULL OR la.value_reference <> l.level)"
+        "WHERE l.level IN :levels AND (la.value_reference IS NULL OR la.value_reference COLLATE utf8mb4_bin <> l.level COLLATE utf8mb4_bin)"
     ).bindparams(bindparam("levels", expanding=True))
     with target_engine.connect() as conn:
         rows = conn.execute(query, {"levels": LEVEL_ATTRIBUTE_VALUES}).fetchall()
