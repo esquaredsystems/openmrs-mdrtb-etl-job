@@ -67,31 +67,53 @@ def load_location_attribute_type():
     info(f"Load location_attribute_type completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
 
+# Columns refreshed from locations.xlsx when a location already exists. location_id and uuid identify
+# the row and are never rewritten.
+LOCATION_UPSERT_COLUMNS = [
+    "name", "description", "country", "state_province", "county_district", "creator", "date_created",
+    "retired", "retired_by", "date_retired", "retire_reason", "parent_location",
+]
+
+
+def _on_duplicate_update(columns):
+    return " ON DUPLICATE KEY UPDATE " + ", ".join(f"{c} = VALUES({c})" for c in columns)
+
+
+def build_location_upserts():
+    """
+    Upserts for the location table; locations.xlsx is the source of truth, so a rerun applies edits made there.
+    The level statements set the real parent. The catch-all statements at the end match many of the same
+    rows with parent_location = NULL, so they refresh every column except parent_location.
+    """
+    columns = "(location_id, name, description, country, state_province, county_district, creator, date_created, retired, retired_by, date_retired, retire_reason, parent_location, uuid)"
+    upsert = _on_duplicate_update(LOCATION_UPSERT_COLUMNS)
+    upsert_keep_parent = _on_duplicate_update([c for c in LOCATION_UPSERT_COLUMNS if c != "parent_location"])
+    return [
+        # UPSERT Tajikistan (parent location)
+        f"INSERT INTO location {columns} select location_id, name, description, 'Точикистон (Таджикистан)' as country, state_province, county_district, 1 as creator, date_created, retired, retired_by, date_retired, retire_reason, parent_location, uuid from _location l where location_id = 1 ON DUPLICATE KEY UPDATE name = VALUES(name), description = VALUES(description), country = VALUES(country), state_province = VALUES(state_province), county_district = VALUES(county_district), creator = VALUES(creator), date_created = VALUES(date_created), retired = VALUES(retired), retired_by = VALUES(retired_by), date_retired = VALUES(date_retired), retire_reason = VALUES(retire_reason), parent_location = VALUES(parent_location), uuid = VALUES(uuid)",
+        # Upsert all Regions
+        f"INSERT INTO location {columns} select location_id, name, description, 'Точикистон (Таджикистан)' as country, state_province, county_district, 1 as creator, date_created, retired, retired_by, date_retired, retire_reason, parent_location, uuid from _location l where `level` = 'REGION'{upsert}",
+        # Upsert all Subregions
+        f"INSERT INTO location {columns} select l.location_id, l.name, l.description, 'Точикистон (Таджикистан)' as country, l.state_province, l.county_district, 1 as creator, l.date_created, l.retired, NULL, NULL, NULL, p.location_id as parent_location, l.uuid from _location l inner join _location as p on p.location_id = l.parent_location where l.`level` = 'SUBREGION'{upsert}",
+        # Upsert all Districts
+        f"INSERT INTO location {columns} select l.location_id, l.name, l.description, 'Точикистон (Таджикистан)' as country, l.state_province, l.county_district, 1 as creator, l.date_created, l.retired, l.retired_by, l.date_retired, l.retire_reason, p.location_id as parent_location, l.uuid from _location l inner join _location as p on p.location_id = l.parent_location where l.`level` = 'DISTRICT'{upsert}",
+        # Upsert all Facilities
+        f"INSERT INTO location {columns} select l.location_id, l.name, l.description, 'Точикистон (Таджикистан)' as country, l.state_province, l.county_district, 1 as creator, l.date_created, l.retired, l.retired_by, l.date_retired, l.retire_reason, p.location_id as parent_location, l.uuid from _location l inner join _location as p on p.location_id = l.parent_location where l.`level` = 'FACILITY'{upsert}",
+        # Upsert all locations without parent
+        f"INSERT INTO location {columns} select l.location_id, l.name, l.description, 'Точикистон (Таджикистан)' as country, l.state_province, l.county_district, 1 as creator, l.date_created, l.retired, l.retired_by, l.date_retired, l.retire_reason, NULL, l.uuid from _location l where l.parent_location is null and l.parent_location not in (select location_id from location){upsert_keep_parent}",
+        # Upsert all retired locations without parent
+        f"INSERT INTO location {columns} select l.location_id, l.name, l.description, 'Точикистон (Таджикистан)' as country, l.state_province, l.county_district, 1 as creator, l.date_created, l.retired, l.retired_by, l.date_retired, l.retire_reason, NULL, l.uuid from _location l where l.parent_location is null and l.retired = 1{upsert_keep_parent}",
+        # Upsert all retired locations with parent
+        f"INSERT INTO location {columns} select l.location_id, l.name, l.description, 'Точикистон (Таджикистан)' as country, l.state_province, l.county_district, 1 as creator, l.date_created, l.retired, l.retired_by, l.date_retired, l.retire_reason, NULL, l.uuid from _location l where l.parent_location is not null and l.retired = 1{upsert_keep_parent}",
+    ]
+
+
 def load_location():
     start_time = time.time()
     target_engine = get_target_engine()
-    columns = "(location_id, name, description, country, state_province, county_district, creator, date_created, retired, retired_by, date_retired, retire_reason, parent_location, uuid)"
-    insert_queries = [
-        # UPSERT Tajikistan (parent location)
-        f"INSERT INTO location {columns} select location_id, name, description, 'Точикистон (Таджикистан)' as country, state_province, county_district, 1 as creator, date_created, retired, retired_by, date_retired, retire_reason, parent_location, uuid from _location l where location_id = 1 ON DUPLICATE KEY UPDATE name = VALUES(name), description = VALUES(description), country = VALUES(country), state_province = VALUES(state_province), county_district = VALUES(county_district), creator = VALUES(creator), date_created = VALUES(date_created), retired = VALUES(retired), retired_by = VALUES(retired_by), date_retired = VALUES(date_retired), retire_reason = VALUES(retire_reason), parent_location = VALUES(parent_location), uuid = VALUES(uuid)",
-        # Insert all Regions
-        f"INSERT IGNORE INTO location {columns} select location_id, name, description, 'Точикистон (Таджикистан)' as country, state_province, county_district, 1 as creator, date_created, retired, retired_by, date_retired, retire_reason, parent_location, uuid from _location l where `level` = 'REGION'",
-        # Insert all Subregions
-        f"INSERT IGNORE INTO location {columns} select l.location_id, l.name, l.description, 'Точикистон (Таджикистан)' as country, l.state_province, l.county_district, 1 as creator, l.date_created, l.retired, NULL, NULL, NULL, p.location_id as parent_location, l.uuid from _location l inner join _location as p on p.location_id = l.parent_location where l.`level` = 'SUBREGION'",
-        # Insert all Districts
-        f"INSERT IGNORE INTO location {columns} select l.location_id, l.name, l.description, 'Точикистон (Таджикистан)' as country, l.state_province, l.county_district, 1 as creator, l.date_created, l.retired, l.retired_by, l.date_retired, l.retire_reason, p.location_id as parent_location, l.uuid from _location l inner join _location as p on p.location_id = l.parent_location where l.`level` = 'DISTRICT'",
-        # Insert all Facilities
-        f"INSERT IGNORE INTO location {columns} select l.location_id, l.name, l.description, 'Точикистон (Таджикистан)' as country, l.state_province, l.county_district, 1 as creator, l.date_created, l.retired, l.retired_by, l.date_retired, l.retire_reason, p.location_id as parent_location, l.uuid from _location l inner join _location as p on p.location_id = l.parent_location where l.`level` = 'FACILITY'",
-        # Insert all locations without parent
-        f"INSERT IGNORE INTO location {columns} select l.location_id, l.name, l.description, 'Точикистон (Таджикистан)' as country, l.state_province, l.county_district, 1 as creator, l.date_created, l.retired, l.retired_by, l.date_retired, l.retire_reason, NULL, l.uuid from _location l where l.parent_location is null and l.parent_location not in (select location_id from location)",
-        # Insert all retired locations without parent
-        f"INSERT IGNORE INTO location {columns} select l.location_id, l.name, l.description, 'Точикистон (Таджикистан)' as country, l.state_province, l.county_district, 1 as creator, l.date_created, l.retired, l.retired_by, l.date_retired, l.retire_reason, NULL, l.uuid from _location l where l.parent_location is null and l.retired = 1",
-        # Insert all retired locations with parent
-        f"INSERT IGNORE INTO location {columns} select l.location_id, l.name, l.description, 'Точикистон (Таджикистан)' as country, l.state_province, l.county_district, 1 as creator, l.date_created, l.retired, l.retired_by, l.date_retired, l.retire_reason, NULL, l.uuid from _location l where l.parent_location is not null and l.retired = 1",
-    ]
     with target_engine.connect() as conn:
         info("Loading data for location table...")
-        for i, query in enumerate(insert_queries, 1):
+        for i, query in enumerate(build_location_upserts(), 1):
             conn.execute(text(query))
             conn.commit()
     info(f"Load location completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
@@ -102,10 +124,27 @@ def load_location():
 LEVEL_ATTRIBUTE_VALUES = ["REGION", "SUBREGION", "DISTRICT", "FACILITY"]
 
 
+def build_location_attribute_update():
+    """
+    Brings the active LEVEL attribute in line with locations.xlsx, in place (no void and re-insert).
+    location_attribute has no unique key on (location_id, attribute_type_id), so this cannot be an ON DUPLICATE KEY UPDATE.
+    """
+    return text(
+        "UPDATE location_attribute AS la "
+        "INNER JOIN location_attribute_type AS lat "
+        "    ON lat.location_attribute_type_id = la.attribute_type_id AND lat.name = 'LEVEL' "
+        "INNER JOIN _location AS l ON l.location_id = la.location_id "
+        "SET la.value_reference = l.level, la.changed_by = 1, la.date_changed = current_timestamp() "
+        "WHERE la.voided = 0 "
+        "AND l.level IN :levels "
+        "AND la.value_reference <> l.level"
+    ).bindparams(bindparam("levels", expanding=True))
+
+
 def build_location_attribute_insert():
     """
-    Rerun-safe INSERT for the LEVEL location attribute.
-    Note this is insert-only, matching the rest of the ETL: a location that already has a LEVEL attribute is left untouched, it is not updated to a new value.
+    Rerun-safe INSERT for the LEVEL location attribute, for locations that have no active LEVEL yet.
+    Existing ones are corrected by build_location_attribute_update().
     """
     columns = (
         "(location_id, attribute_type_id, value_reference, uuid, creator, date_created) "
@@ -128,14 +167,42 @@ def build_location_attribute_insert():
 def load_location_attribute():
     start_time = time.time()
     target_engine = get_target_engine()
+    params = {"levels": LEVEL_ATTRIBUTE_VALUES}
     with target_engine.connect() as conn:
         info("Loading data for location_attribute table...")
-        result = conn.execute(
-            build_location_attribute_insert(), {"levels": LEVEL_ATTRIBUTE_VALUES}
-        )
+        # One transaction: the update and the insert are committed together
+        updated = conn.execute(build_location_attribute_update(), params).rowcount
+        inserted = conn.execute(build_location_attribute_insert(), params).rowcount
         conn.commit()
-        info(f"Inserted {result.rowcount} LEVEL attribute(s); existing ones left as they were")
+        info(f"LEVEL attribute(s): {updated} updated, {inserted} inserted")
     info(f"Load location_attribute completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
+
+
+def verify_location_attribute():
+    """
+    Warn when a staged location has no active LEVEL attribute, or one that differs from locations.xlsx.
+    The web app builds its Region/District/Facility dropdowns from LEVEL, so a gap here shows up as empty dropdowns.
+    After load_location_attribute() this should report nothing.
+    """
+    target_engine = get_target_engine()
+    query = text(
+        "SELECT l.location_id, l.name, l.level, la.value_reference "
+        "FROM _location AS l "
+        "INNER JOIN location_attribute_type AS lat ON lat.name = 'LEVEL' "
+        "LEFT JOIN location_attribute AS la ON la.location_id = l.location_id "
+        "    AND la.attribute_type_id = lat.location_attribute_type_id AND la.voided = 0 "
+        "WHERE l.level IN :levels AND (la.value_reference IS NULL OR la.value_reference <> l.level)"
+    ).bindparams(bindparam("levels", expanding=True))
+    with target_engine.connect() as conn:
+        rows = conn.execute(query, {"levels": LEVEL_ATTRIBUTE_VALUES}).fetchall()
+    missing = [r for r in rows if r.value_reference is None]
+    stale = [r for r in rows if r.value_reference is not None]
+    if missing:
+        warning(f"{len(missing)} location(s) have no LEVEL attribute, e.g. {[(r.location_id, r.level) for r in missing[:10]]}")
+    if stale:
+        warning(f"{len(stale)} location(s) have a LEVEL that differs from locations.xlsx, e.g. {[(r.location_id, r.value_reference, r.level) for r in stale[:10]]}")
+    if not rows:
+        info("All staged locations have the expected LEVEL attribute")
 
 
 ##### Loading functions #####
@@ -143,6 +210,7 @@ def load_location_group():
     load_location_attribute_type()
     load_location()
     load_location_attribute()
+    verify_location_attribute()
 
     # Load location tags and tag map
     target_engine = get_target_engine()
