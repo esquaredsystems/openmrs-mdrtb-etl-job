@@ -118,16 +118,23 @@ def load_order():
         SELECT 3 AS order_type_id, cn.concept_id, p.provider_id AS orderer, e.encounter_id, e.encounter_datetime, e.creator, e.date_created, e.voided, e.voided_by, e.date_voided, e.voided_by, e.patient_id, UUID(), 'ROUTINE' AS urgency, CONCAT('ORD-', e.encounter_id) AS order_number, 'NEW' AS order_action, 1 AS care_setting FROM encounter AS e
         INNER JOIN users u ON u.user_id = e.creator
         INNER JOIN patient pt ON pt.patient_id = e.patient_id
-        INNER JOIN provider p ON p.person_id = u.person_id
+        INNER JOIN (SELECT person_id, MIN(provider_id) AS provider_id FROM provider GROUP BY person_id) p ON p.person_id = u.person_id
         INNER JOIN concept_name cn ON cn.name = 'MICROSCOPY TEST CONSTRUCT' AND cn.locale = 'en' AND cn.concept_name_type = 'FULLY_SPECIFIED' AND cn.voided = 0
         WHERE e.encounter_type IN (5, 11)
-        ON DUPLICATE KEY UPDATE
-            -- matched via the unique order_number key (order_id is intentionally never touched)
-            voided = VALUES(voided),
-            voided_by = VALUES(voided_by),
-            date_voided = VALUES(date_voided),
-            void_reason = VALUES(void_reason),
-            date_activated = VALUES(date_activated)
+          AND NOT EXISTS (SELECT 1 FROM orders x WHERE x.encounter_id = e.encounter_id AND x.order_type_id = 3)
+    """
+    sync_encounter_orders_sql = """
+        UPDATE orders o
+        INNER JOIN encounter e ON e.encounter_id = o.encounter_id
+        SET o.voided = e.voided,
+            o.voided_by = e.voided_by,
+            o.date_voided = e.date_voided,
+            o.void_reason = e.voided_by,
+            o.date_activated = e.encounter_datetime
+        WHERE o.order_type_id = 3
+          AND e.encounter_type IN (5, 11)
+          AND NOT (o.voided <=> e.voided AND o.voided_by <=> e.voided_by AND o.date_voided <=> e.date_voided
+                   AND o.void_reason <=> e.voided_by AND o.date_activated <=> e.encounter_datetime)
     """
     # Load drug orders (order_type_id = 1) from the staging _orders table.
     # The original order_id is preserved so that drug_order.order_id (loaded later)
@@ -199,6 +206,7 @@ def load_order():
         conn.execute(text(insert_drug_orders_sql))
         conn.execute(text(insert_seed_order_sql))
         conn.execute(text(insert_encounter_orders_sql))
+        conn.execute(text(sync_encounter_orders_sql))
         conn.execute(text(update_orders_creator_sql))
         conn.execute(text(update_orders_voided_by_sql))
         conn.commit()
