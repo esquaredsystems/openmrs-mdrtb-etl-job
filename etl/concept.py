@@ -564,17 +564,57 @@ def load_concept_reference_source():
     info(f"Load concept_reference_source completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
 
+def build_concept_answer_delete():
+    """
+    Deletes target answers that were dropped from the concept_answer sheet. The sheet is the source of truth only for the
+    concepts it lists: answers of concepts that do not appear in _concept_answer are left alone.
+    """
+    return text(
+        "DELETE ca FROM concept_answer AS ca "
+        "WHERE ca.concept_id IN (SELECT s.concept_id FROM _concept_answer AS s) "
+        "AND NOT EXISTS (SELECT 1 FROM _concept_answer AS s WHERE s.concept_answer_id = ca.concept_answer_id)"
+    )
+
+
+def build_concept_answer_changed_count():
+    """
+    Counts the existing target answers whose answer_concept or sort_weight differs from the sheet. The affected-rows count of
+    the upsert below cannot be used for this: with FOUND_ROWS an unchanged row counts the same as a new one.
+    """
+    return text(
+        "SELECT COUNT(*) FROM concept_answer AS ca "
+        "INNER JOIN _concept_answer AS s ON s.concept_answer_id = ca.concept_answer_id "
+        "WHERE NOT (ca.answer_concept <=> s.answer_concept) OR NOT (ca.sort_weight <=> s.sort_weight)"
+    )
+
+
+def build_concept_answer_upsert():
+    """
+    Inserts new answers and brings answer_concept and sort_weight of existing ones in line with the sheet,
+    so a change of order in concept_mapping.xlsx reaches an already populated target.
+    """
+    return text(
+        "INSERT IGNORE INTO concept_answer (concept_answer_id, concept_id, answer_concept, answer_drug, creator, date_created, sort_weight, uuid) "
+        "SELECT concept_answer_id, concept_id, answer_concept, answer_drug, creator, date_created, sort_weight, uuid FROM _concept_answer "
+        "ON DUPLICATE KEY UPDATE answer_concept = VALUES(answer_concept), sort_weight = VALUES(sort_weight)"
+    )
+
+
 def load_concept_answer():
     start_time = time.time()
     target_engine = get_target_engine()
-    select_insert_sql = """
-    INSERT IGNORE INTO concept_answer (concept_answer_id, concept_id, answer_concept, answer_drug, creator, date_created, sort_weight, uuid)
-    SELECT concept_answer_id, concept_id, answer_concept, answer_drug, creator, date_created, sort_weight, uuid FROM _concept_answer
-    """
     with target_engine.connect() as conn:
+        # The delete is driven by the staging table, so an empty one (failed or empty workbook read) must not run it
+        if not conn.execute(text("SELECT COUNT(*) FROM _concept_answer")).scalar():
+            warning("No data found in _concept_answer staging table, skipping concept_answer load.")
+            return
         info("Loading data for concept_answer table...")
-        conn.execute(text(select_insert_sql))
+        # One transaction: the delete and the upsert are committed together
+        deleted = conn.execute(build_concept_answer_delete()).rowcount
+        updated = conn.execute(build_concept_answer_changed_count()).scalar()
+        conn.execute(build_concept_answer_upsert())
         conn.commit()
+        info(f"concept_answer row(s): {deleted} deleted, {updated} updated")
     info(f"Load concept_answer completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
 
