@@ -24,7 +24,7 @@ def extract_concept(drop_create=False):
             target_conn.execute(text("TRUNCATE TABLE _concept"))
             target_conn.commit()
 
-        info(f"Inserting {len(df)} records from concept_mapping.xlsx concept sheet into target _concept table...")
+        info(f"Inserting {len(df)} records from concept_concept.csv into target _concept table...")
         df = df.replace({np.nan: None, pd.NaT: None})
         for column in ["short_name", "description", "form_text", "version", "date_retired", "retire_reason"]:
             if column not in df.columns:
@@ -40,7 +40,7 @@ def extract_concept(drop_create=False):
         with target_engine.connect() as target_conn:
             target_conn.execute(insert_query, source_data)
             target_conn.commit()
-        info("Import from concept_mapping.xlsx concept sheet completed successfully.")
+        info("Import from concept_concept.csv completed successfully.")
 
 
 def extract_concept_answer(drop_create=False):
@@ -55,7 +55,7 @@ def extract_concept_answer(drop_create=False):
             target_conn.commit()
 
         info(
-            f"Inserting {len(df)} records from concept_mapping.xlsx concept_answer sheet into target _concept_answer table...")
+            f"Inserting {len(df)} records from concept_concept_answer.csv into target _concept_answer table...")
         df = df.replace({np.nan: None, pd.NaT: None})
         df["answer_drug"] = None
         df["creator"] = 1
@@ -68,9 +68,9 @@ def extract_concept_answer(drop_create=False):
         with target_engine.connect() as target_conn:
             target_conn.execute(insert_query, source_data)
             target_conn.commit()
-        info("Import from concept_mapping.xlsx concept_answer sheet completed successfully.")
+        info("Import from concept_concept_answer.csv completed successfully.")
     else:
-        warning("No data found in concept_answer sheet of concept_mapping.xlsx.")
+        warning("No data found in concept_concept_answer.csv.")
 
 
 def extract_concept_class(drop_create=False):
@@ -206,7 +206,7 @@ def extract_concept_map(drop_create=False):
             target_conn.commit()
 
         info(
-            f"Inserting {len(df)} records from concept_mapping.xlsx concept_map sheet into target _concept_map table...")
+            f"Inserting {len(df)} records from concept_concept_map.csv into target _concept_map table...")
         df = df.replace({np.nan: None, pd.NaT: None})
         for column in ["comment"]:
             if column not in df.columns:
@@ -220,7 +220,7 @@ def extract_concept_map(drop_create=False):
         with target_engine.connect() as target_conn:
             target_conn.execute(insert_query, source_data)
             target_conn.commit()
-        info("Import from concept_mapping.xlsx concept_map sheet completed successfully.")
+        info("Import from concept_concept_map.csv completed successfully.")
 
 
 def extract_concept_name(drop_create=False):
@@ -236,7 +236,7 @@ def extract_concept_name(drop_create=False):
             target_conn.commit()
 
         info(
-            f"Inserting {len(df)} records from concept_mapping.xlsx concept_name sheet into target _concept_name table...")
+            f"Inserting {len(df)} records from concept_concept_name.csv into target _concept_name table...")
         df = df.rename(columns={"type": "concept_name_type"})
         insert_query = text(
             "INSERT INTO _concept_name (concept_name_id, concept_id, name, locale, locale_preferred, creator, date_created, concept_name_type, voided, voided_by, date_voided, void_reason, uuid) VALUES (:concept_name_id, :concept_id, :name, :locale, :locale_preferred, :creator, :date_created, :concept_name_type, :voided, :voided_by, :date_voided, :void_reason, :uuid)")
@@ -258,7 +258,7 @@ def extract_concept_name(drop_create=False):
             ]].to_dict(orient='records')
             target_conn.execute(insert_query, source_data)
             target_conn.commit()
-        info("Import from concept_mapping.xlsx concept_name sheet completed successfully.")
+        info("Import from concept_concept_name.csv completed successfully.")
 
 
 def extract_concept_name_tag(drop_create=False):
@@ -388,7 +388,7 @@ def extract_concept_set(drop_create=False):
             target_conn.commit()
 
         info(
-            f"Inserting {len(df)} records from concept_mapping.xlsx concept_set sheet into target _concept_set table...")
+            f"Inserting {len(df)} records from concept_concept_set.csv into target _concept_set table...")
         df = df.replace({np.nan: None, pd.NaT: None})
         source_data = df[[
             "concept_set_id", "concept_id", "concept_set", "sort_weight", "creator", "date_created", "uuid"
@@ -398,7 +398,7 @@ def extract_concept_set(drop_create=False):
         with target_engine.connect() as target_conn:
             target_conn.execute(insert_query, source_data)
             target_conn.commit()
-        info("Import from concept_mapping.xlsx concept_set sheet completed successfully.")
+        info("Import from concept_concept_set.csv completed successfully.")
 
 
 def extract_concept_word(drop_create=False):
@@ -591,7 +591,7 @@ def build_concept_answer_changed_count():
 def build_concept_answer_upsert():
     """
     Inserts new answers and brings answer_concept and sort_weight of existing ones in line with the sheet,
-    so a change of order in concept_mapping.xlsx reaches an already populated target.
+    so a change of order in concept_*.csv reaches an already populated target.
     """
     return text(
         "INSERT IGNORE INTO concept_answer (concept_answer_id, concept_id, answer_concept, answer_drug, creator, date_created, sort_weight, uuid) "

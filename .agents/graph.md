@@ -13,7 +13,7 @@ etl/fk_check.py             # READ-ONLY FK violation detector (not an extract/lo
 models/schema_models.py     # SQLAlchemy models / staging DDL for 46 OpenMRS tables (prefixed _)
 config/database.py          # SQLAlchemy engine setup (source + target, PyMySQL)
 config/config.py            # shared runtime config, incl. BATCH_SIZE
-utils/helpers.py            # Excel/resource loaders (pandas + openpyxl)
+utils/helpers.py            # CSV/resource loaders (pandas)
 utils/ (logger)             # loguru → etl.log; use instead of print()
 resources/                  # migration input spreadsheets + SQL assets (do not modify)
 tests/                      # pytest — test_helpers.py (unit, no DB) | test_migration.py (integration, both DBs)

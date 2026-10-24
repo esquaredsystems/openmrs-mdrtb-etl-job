@@ -13,7 +13,7 @@ Preserve data semantics, source IDs, UUIDs, timestamps, retired/voided flags, an
 - Python 3.12, pinned in `Pipfile`.
 - MySQL as both source and target database.
 - SQLAlchemy 2.x with PyMySQL for database access.
-- pandas and openpyxl for Excel-backed migration inputs in `resources/`.
+- pandas for CSV-backed migration inputs in `resources/`, one file per former Excel sheet, named `<prefix>_<sheet>.csv` (`commonlab_`, `concept_`, `location_`, `message_`); strings are double-quoted. `global_properties.xlsx` stays as Excel (needs openpyxl).
 - python-dotenv for `.env` configuration.
 - loguru for logging to `etl.log`.
 - pytest for tests.
@@ -25,7 +25,7 @@ Important paths:
 - `models/schema_models.py`: staging table DDL helpers for underscore-prefixed tables.
 - `config/database.py`: source and target SQLAlchemy engine creation.
 - `config/config.py`: shared runtime config, including `BATCH_SIZE`.
-- `utils/helpers.py`: Excel/resource loaders.
+- `utils/helpers.py`: CSV/resource loaders.
 - `resources/`: migration input spreadsheets and SQL assets.
 - `tests/`: pytest coverage, currently focused on helper/resource loading behavior.
 
@@ -60,6 +60,7 @@ python main.py --extract
 python main.py --extract --hard-reset
 python main.py --transform
 python main.py --load
+python main.py --extract --load --metadata-only   # metadata tables only, no clinical data
 ```
 
 ## Conventions That Matter
@@ -75,7 +76,7 @@ python main.py --load
 - Commit database writes explicitly after inserts.
 - For large OpenMRS tables, use batching with `BATCH_SIZE` and `yield_per`, matching the existing `obs`, `patient`, `encounter`, `orders`, `drug`, and `report` patterns.
 - Use `INSERT IGNORE` where the existing ETL uses it, because reruns and resume flows rely on idempotent inserts.
-- Keep Excel-backed reference data loading centralized in `utils/helpers.py`.
+- Keep CSV-backed reference data loading centralized in `utils/helpers.py`.
 - Preserve existing resource sheet names and column names exactly unless the spreadsheet migration contract changes.
 - Use `utils.logger` instead of bare `print()` for ETL status messages.
 - Add focused pytest coverage for helper behavior, transformations, and any logic that can be tested without live OpenMRS databases.

@@ -259,7 +259,7 @@ openmrs-mdrtb-etl-job/
 ├── etl/            # Extract and load logic per entity
 │   └── fk_check.py # Read-only foreign key violation detector (--check-integrity)
 ├── models/         # Database schema definitions
-├── resources/      # Static data and mappings (Excel files)
+├── resources/      # Static data and mappings (CSV files, <prefix>_<sheet>.csv; global_properties.xlsx)
 ├── tests/          # Test suite
 ├── utils/          # Helpers and logging utilities
 ├── main.py         # Entry point
