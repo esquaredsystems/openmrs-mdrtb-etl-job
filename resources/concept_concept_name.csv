@@ -1793,10 +1793,8 @@
 476,Cavernous Tuberculosis,"en","FULLY_SPECIFIED","4395f061-a374-4f52-99ca-2beabc4b64d4"
 476,"Кавернозный","ru","FULLY_SPECIFIED","4395f061-a374-4f52-99ca-2beabc4b64d4"
 476,"Ковокидор","tj","FULLY_SPECIFIED","4395f061-a374-4f52-99ca-2beabc4b64d4"
-477,FIBROUSCAVERNOUS,"en","FULLY_SPECIFIED","19354709-be47-4f11-b27a-1a41bb55342d"
-477,"Фиброзно-Кавернозный","ru","FULLY_SPECIFIED","19354709-be47-4f11-b27a-1a41bb55342d"
-477,Cavernous Tuberculosis,"en","FULLY_SPECIFIED","19354709-be47-4f11-b27a-1a41bb55342d"
-477,Кавернозный туберкулёз,"ru","FULLY_SPECIFIED","19354709-be47-4f11-b27a-1a41bb55342d"
+477,"Fibrous Cavernous Tuberculosis","en","FULLY_SPECIFIED","19354709-be47-4f11-b27a-1a41bb55342d"
+477,"Фиброзно-кавернозный туберкулёз","ru","FULLY_SPECIFIED","19354709-be47-4f11-b27a-1a41bb55342d"
 477,"Лифсору ковокидор","tj","FULLY_SPECIFIED","19354709-be47-4f11-b27a-1a41bb55342d"
 478,"CIRRHOTIC","en","FULLY_SPECIFIED","48a2fc8d-4b38-4787-a170-dee58dfd0316"
 478,Цирротический,"ru","FULLY_SPECIFIED","48a2fc8d-4b38-4787-a170-dee58dfd0316"
@@ -3080,10 +3078,3 @@
 886,"X-ray","en","FULLY_SPECIFIED","20139d76-d09a-11f1-8e3f-0c01de59229d"
 886,"Рентгенография","ru","FULLY_SPECIFIED","20139d76-d09a-11f1-8e3f-0c01de59229d"
 886,"рентген","tj","FULLY_SPECIFIED","20139d76-d09a-11f1-8e3f-0c01de59229d"
-----
-
-----
-,"Veterinarian","en","FULLY_SPECIFIED",""
-,"МВетеринар","ru","FULLY_SPECIFIED",""
-,"ветеринар","tj","FULLY_SPECIFIED",""
-
