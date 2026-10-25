@@ -31,7 +31,7 @@ def extract_labtest_type(drop_create=False):
     target_engine = get_target_engine()
     if drop_create or not table_exists(target_engine, '_labtest_type'):
         create_labtest_type_table(target_engine, drop_create=drop_create)
-    info("Fetching data from commonlab.xlsx test_types sheet...")
+    info("Fetching data from commonlab_test_types.csv...")
 
     df = get_labtest_type_data()
     if not df.empty:
@@ -44,7 +44,7 @@ def extract_labtest_type(drop_create=False):
             "type_id", "name", "description", "test_group", "short_name", "requires_specimen", "reference_concept_id", "uuid"
         ]].to_dict(orient='records')
 
-        info(f"Inserting {len(source_data)} records from commonlab.xlsx test_types sheet into target _labtest_type table...")
+        info(f"Inserting {len(source_data)} records from commonlab_test_types.csv into target _labtest_type table...")
         insert_query = text(
             """
             INSERT INTO _labtest_type (test_type_id, name, description, test_group, short_name, requires_specimen, reference_concept_id, creator, date_created, retired, uuid) 
@@ -53,16 +53,16 @@ def extract_labtest_type(drop_create=False):
         with target_engine.connect() as target_conn:
             target_conn.execute(insert_query, source_data)
             target_conn.commit()
-        info("Import from commonlab.xlsx test_types sheet completed successfully.")
+        info("Import from commonlab_test_types.csv completed successfully.")
     else:
-        warning("No data found in commonlab.xlsx test_types sheet.")
+        warning("No data found in commonlab_test_types.csv.")
 
 
 def extract_labtest_attribute_type(drop_create=False):
     target_engine = get_target_engine()
     if drop_create or not table_exists(target_engine, '_labtest_attribute_type'):
         create_labtest_attribute_type_table(target_engine, drop_create=drop_create)
-    info("Fetching data from commonlab.xlsx attribute_types sheet...")
+    info("Fetching data from commonlab_attribute_types.csv...")
 
     df = get_labtest_attribute_type_data()
     if not df.empty:
@@ -75,7 +75,7 @@ def extract_labtest_attribute_type(drop_create=False):
             "test_attribute_type_id", "test_type_id", "name", "datatype", "min_occurs", "max_occurs", "datatype_config", "sort_weight", "description", "preferred_handler", "hint", "group_name", "multiset_name", "creator", "date_created", "retired", "uuid"
         ]].to_dict(orient='records')
 
-        info(f"Inserting {len(source_data)} records from commonlab.xlsx attribute_types sheet into target _labtest_attribute_type table...")
+        info(f"Inserting {len(source_data)} records from commonlab_attribute_types.csv into target _labtest_attribute_type table...")
         insert_query = text(
             """
             INSERT INTO _labtest_attribute_type (test_attribute_type_id, test_type_id, name, datatype, min_occurs, max_occurs, datatype_config, sort_weight, description, preferred_handler, hint, group_name, multiset_name, creator, date_created, retired, uuid) 
@@ -84,9 +84,9 @@ def extract_labtest_attribute_type(drop_create=False):
         with target_engine.connect() as target_conn:
             target_conn.execute(insert_query, source_data)
             target_conn.commit()
-        info("Import from commonlab.xlsx attribute_types sheet completed successfully.")
+        info("Import from commonlab_attribute_types.csv completed successfully.")
     else:
-        warning("No data found in commonlab.xlsx attribute_types sheet.")
+        warning("No data found in commonlab_attribute_types.csv.")
 
 
 def extract_encounter_results(drop_create=False):

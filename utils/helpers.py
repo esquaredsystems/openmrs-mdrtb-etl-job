@@ -22,44 +22,69 @@ def read_excel_sheet(filename, sheet_name):
         warning(f"Error reading {filename}: {e}")
         return pd.DataFrame()
 
+def read_csv_file(filename):
+    """
+    Reads a CSV file from the resources directory and returns a pandas DataFrame.
+    Files are named <workbook prefix>_<sheet>.csv, e.g. concept_concept_name.csv.
+    """
+    csv_path = os.path.join('resources', filename)
+    info(f"Reading data from {csv_path}...")
+
+    try:
+        df = pd.read_csv(csv_path)
+        if not df.empty:
+            # Excel carried real dates; restore them for the date_* columns that hold any value
+            for column in df.columns:
+                if column.startswith('date_') and df[column].notna().any():
+                    df[column] = pd.to_datetime(df[column])
+            # Convert NaN to None for database compatibility
+            df = df.where(pd.notnull(df), None)
+            return df
+        else:
+            warning(f"No data found in {filename}.")
+            return pd.DataFrame()
+    except Exception as e:
+        warning(f"Error reading {filename}: {e}")
+        return pd.DataFrame()
+
 def get_labtest_type_data():
     # Expected columns: type_id	name	description	test_group	short_name	requires_specimen	reference_concept_id	uuid
-    df = read_excel_sheet('commonlab.xlsx', 'test_types')
+    df = read_csv_file('commonlab_test_types.csv')
     return df
 
 def get_labtest_attribute_type_data():
     # Expected columns: test_attribute_type_id	test_type_id	name	datatype_config	sort_weight	description	preferred_handler	hint	group_name	multiset_name	creator	date_created	retired	uuid
-    df = read_excel_sheet('commonlab.xlsx', 'attribute_types')
+    df = read_csv_file('commonlab_attribute_types.csv')
     return df
 
 def get_concept_data():
     # Expected columns: concept_id	retired	retired_by	datatype_id	class_id	is_set	creator	date_created	changed_by	date_changed	uuid
-    df = read_excel_sheet('concept_mapping.xlsx', 'concept')
+    df = read_csv_file('concept_concept.csv')
     return df
 
 def get_concept_map_data():
     # Expected columns: concept_map_id	source_id	source	source_code	comment	creator	date_created	concept_id	uuid
-    df = read_excel_sheet('concept_mapping.xlsx', 'concept_map')
+    df = read_csv_file('concept_concept_map.csv')
     return df
 
 def get_concept_answer_data():
     # Expected columns: concept_answer_id	concept_id	answer_concept	date_created	sort_weight	uuid
-    df = read_excel_sheet('concept_mapping.xlsx', 'concept_answer')
+    df = read_csv_file('concept_concept_answer.csv')
     return df
 
 def get_concept_name_data():
     # Expected columns: concept_id	name	locale	type
-    df = read_excel_sheet('concept_mapping.xlsx', 'concept_name')
+    df = read_csv_file('concept_concept_name.csv')
     return df
 
 def get_concept_source_data():
     # Expected columns: concept_source_id	name	description	hl7_code	creator	date_created	retired	retired_by	date_retired	retire_reason	uuid
-    df = read_excel_sheet('concept_mapping.xlsx', 'concept_source')
+    df = read_csv_file('concept_concept_source.csv')
     return df
 
 def get_concept_set_data():
     # Expected columns: concept_set_id	concept_id	concept_set	sort_weight	creator	date_created	uuid
-    df = read_excel_sheet('concept_mapping.xlsx', 'concept_set')
+    df = read_csv_file('concept_concept_set.csv')
     return df
 
 def get_global_property_data():
@@ -69,11 +94,11 @@ def get_global_property_data():
 
 def get_location_data():
     # Expected columns: location_id	name	level	parent_location	description	state_province	county_district	date_created	retired	retired_by	date_retired	retire_reason	uuid
-    df = read_excel_sheet('locations.xlsx', 'locations')
+    df = read_csv_file('location_locations.csv')
     return df
 
 def get_message_properties(language):
     """Return message keys and translations for the requested language."""
     assert language in ['en', 'ru', 'tj']
-    df = read_excel_sheet('message.properties.xlsx', 'translations')
+    df = read_csv_file('message_translations.csv')
     return df[['Key', language]].rename(columns={language: 'Value'})

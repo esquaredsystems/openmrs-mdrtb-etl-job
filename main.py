@@ -76,6 +76,67 @@ def run_extract_job(hard_reset=False):
     info(f"Extraction job completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
 
+def run_metadata_extract_job(hard_reset=False):
+    """
+    Extract only the metadata tables (definitions, configuration, users and roles), plus
+    person and person_name (upserted on load).
+    Clinical and transactional data (patient, encounter, obs, orders, lab results, ...) is skipped.
+    """
+    start_time = time.time()
+    extract_address_hierarchy_group(hard_reset)
+    extract_cohort(drop_create=hard_reset)
+    extract_concept_group(hard_reset)
+    extract_drug(drop_create=hard_reset)
+    extract_drug_ingredient(drop_create=hard_reset)
+    extract_form_group(hard_reset)
+    extract_hl7_source(drop_create=hard_reset)
+    extract_location_group(hard_reset)
+    extract_order_type(drop_create=hard_reset)
+    extract_program_group(hard_reset)
+    extract_user_group(hard_reset)
+    extract_report_object(drop_create=hard_reset)
+    extract_report_schema_xml(drop_create=hard_reset)
+    extract_global_property(drop_create=hard_reset)
+    extract_relationship_type(drop_create=hard_reset)
+    extract_person(drop_create=hard_reset)
+    extract_person_name(drop_create=hard_reset)
+    extract_patient_identifier_type(drop_create=hard_reset)
+    extract_person_attribute_type(drop_create=hard_reset)
+    extract_encounter_type(drop_create=hard_reset)
+    extract_labtest_type(drop_create=hard_reset)
+    extract_labtest_attribute_type(drop_create=hard_reset)
+    info(f"Metadata extraction job completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
+
+
+def run_metadata_load_job():
+    """
+    Load only the metadata tables, keeping the same relative order as run_load_job().
+    """
+    start_time = time.time()
+    load_user_group()
+    # person/person_name are treated as metadata here and upserted, so reruns refresh existing rows
+    load_person(upsert=True)
+    load_person_name(upsert=True)
+    load_address_hierarchy_group()
+    load_cohort()
+    load_concept_group()
+    load_location_group()
+    load_drug_group()
+    load_form_group()
+    load_hl7_source()
+    load_program_group()
+    load_report_object()
+    load_report_schema_xml()
+    load_misc_group()
+    load_patient_identifier_type()
+    load_person_attribute_type()
+    load_encounter_type()
+    load_order_type()
+    load_labtest_type()
+    load_labtest_attribute_type()
+    info(f"Metadata load job completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
+
+
 def run_load_job():
     """
     Execute the data loading phase of the ETL job.
@@ -106,19 +167,21 @@ def run_load_job():
     info(f"Load job completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
 
-def post_etl_job():
+def post_etl_job(metadata_only=False):
     """
     Perform post-ETL tasks such as data cleanup, fixing obsolete location IDs,
     and ensuring necessary privileges for anonymous users are set.
+    With metadata_only, the location fix on clinical data tables is skipped.
     """
     # Placeholder for any post-ETL tasks like cleanup, indexing, etc.
     # Update location IDs for obsolete location
     with get_target_engine().connect() as conn:
-        # Replace the location 205 with the correct one
-        conn.execute(text("UPDATE encounter SET location_id = 214 WHERE location_id = 205;"))
-        conn.execute(text("UPDATE obs SET location_id = 214 WHERE location_id = 205;"))
-        conn.execute(text("UPDATE patient_identifier SET location_id = 214 WHERE location_id = 205;"))
-        conn.execute(text("UPDATE patient_program SET location_id = 214 WHERE location_id = 205;"))
+        if not metadata_only:
+            # Replace the location 205 with the correct one
+            conn.execute(text("UPDATE encounter SET location_id = 214 WHERE location_id = 205;"))
+            conn.execute(text("UPDATE obs SET location_id = 214 WHERE location_id = 205;"))
+            conn.execute(text("UPDATE patient_identifier SET location_id = 214 WHERE location_id = 205;"))
+            conn.execute(text("UPDATE patient_program SET location_id = 214 WHERE location_id = 205;"))
 
         # Set concepts for the program outcomes in program tables
         conn.execute(text("UPDATE program SET outcomes_concept_id = 30 where program_id = 1;"))
@@ -204,6 +267,9 @@ if __name__ == "__main__":
     parser.add_argument("--load", action="store_true", help="Run the load job")
     parser.add_argument("--hard-reset", action="store_true",
                         help="Hard reset (Drop-Create) the tables before extraction")
+    parser.add_argument("--metadata-only", action="store_true",
+                        help="Restrict --extract/--load to the metadata tables (concepts, forms, locations, programs, "
+                             "users/roles, types, global properties, ...); clinical data is skipped")
     parser.add_argument("--check-integrity", action="store_true",
                         help="Scan the target database for foreign key violations (read-only). "
                              "Run alone to check only; combine with --extract/--load to check afterwards")
@@ -216,6 +282,8 @@ if __name__ == "__main__":
     parser.add_argument("--force-cutoff", action="store_true",
                         help="Allow --apply-cutoff to run again after it has already completed once")
     args = parser.parse_args()
+    if args.metadata_only and not (args.extract or args.load):
+        parser.error("--metadata-only must be combined with --extract and/or --load")
 
     info("Connecting to source database...")
     source = get_source_engine()
@@ -234,10 +302,16 @@ if __name__ == "__main__":
     if args.extract or args.load:
         pre_etl_job()
         if args.extract:
-            run_extract_job(hard_reset=args.hard_reset)
+            if args.metadata_only:
+                run_metadata_extract_job(hard_reset=args.hard_reset)
+            else:
+                run_extract_job(hard_reset=args.hard_reset)
         if args.load:
-            run_load_job()
-        post_etl_job()
+            if args.metadata_only:
+                run_metadata_load_job()
+            else:
+                run_load_job()
+        post_etl_job(metadata_only=args.metadata_only)
 
     if args.apply_cutoff:
         run_data_cutoff(dry_run=False, force=args.force_cutoff)

@@ -467,10 +467,31 @@ def extract_patient_group(drop_create):
 
 
 ##### Loading functions #####
-def load_person():
+PERSON_COLUMNS = ["person_id", "gender", "birthdate", "birthdate_estimated", "dead", "death_date", "cause_of_death",
+                  "creator", "date_created", "changed_by", "date_changed", "voided", "voided_by", "date_voided",
+                  "void_reason", "uuid"]
+PERSON_NAME_COLUMNS = ["person_name_id", "preferred", "person_id", "prefix", "given_name", "middle_name",
+                       "family_name_prefix", "family_name", "family_name2", "family_name_suffix", "degree", "creator",
+                       "date_created", "voided", "voided_by", "date_voided", "void_reason", "changed_by",
+                       "date_changed", "uuid"]
+
+
+def _upsert_sql(table, staging_table, columns, key):
+    """INSERT ... SELECT that updates existing rows (matched by primary key or uuid) instead of skipping them.
+    The key and uuid are left untouched on update so the target row keeps its identity."""
+    cols = ", ".join(columns)
+    updates = ", ".join(f"{c} = {staging_table}.{c}" for c in columns if c not in (key, "uuid"))
+    return (f"INSERT INTO {table} ({cols}) SELECT {cols} FROM {staging_table} "
+            f"ON DUPLICATE KEY UPDATE {updates}")
+
+
+def load_person(upsert=False):
     start_time = time.time()
     target_engine = get_target_engine()
-    select_insert_sql = """
+    if upsert:
+        select_insert_sql = _upsert_sql("person", "_person", PERSON_COLUMNS, "person_id")
+    else:
+        select_insert_sql = """
     INSERT INTO person (person_id, gender, birthdate, birthdate_estimated, dead, death_date, cause_of_death, creator, date_created, changed_by, date_changed, voided, voided_by, date_voided, void_reason, uuid)
     SELECT person_id, gender, birthdate, birthdate_estimated, dead, death_date, cause_of_death, creator, date_created, changed_by, date_changed, voided, voided_by, date_voided, void_reason, uuid FROM _person
     WHERE NOT EXISTS (SELECT * FROM person t WHERE t.person_id = _person.person_id)
@@ -482,10 +503,13 @@ def load_person():
     info(f"Load person completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
 
-def load_person_name():
+def load_person_name(upsert=False):
     start_time = time.time()
     target_engine = get_target_engine()
-    select_insert_sql = """
+    if upsert:
+        select_insert_sql = _upsert_sql("person_name", "_person_name", PERSON_NAME_COLUMNS, "person_name_id")
+    else:
+        select_insert_sql = """
     INSERT IGNORE INTO person_name (person_name_id, preferred, person_id, prefix, given_name, middle_name, family_name_prefix, family_name, family_name2, family_name_suffix, degree, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid)
     SELECT person_name_id, preferred, person_id, prefix, given_name, middle_name, family_name_prefix, family_name, family_name2, family_name_suffix, degree, creator, date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid FROM _person_name
     """

@@ -1,6 +1,6 @@
 # tests/test_concept_answer.py
 #
-# Unit coverage for loading concept_answer from concept_mapping.xlsx. No database required — the SQL is
+# Unit coverage for loading concept_answer from concept_*.csv. No database required — the SQL is
 # asserted on once compiled, and load_concept_answer() runs against a recording stand-in for the engine.
 #
 # Background: load_concept_answer() used to be a plain INSERT IGNORE, so answers dropped from the sheet stayed

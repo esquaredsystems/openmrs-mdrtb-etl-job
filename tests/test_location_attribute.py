@@ -94,7 +94,7 @@ def test_district_is_not_inserted_twice():
     assert _normalised().count("INSERT IGNORE") == 1
 
 
-# --- LEVEL update: locations.xlsx is the source of truth, so a changed level is
+# --- LEVEL update: location_locations.csv is the source of truth, so a changed level is
 # corrected in place on the next --load instead of needing a manual patch.
 
 

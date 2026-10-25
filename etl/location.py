@@ -15,9 +15,9 @@ def extract_location(drop_create=False):
     target_engine = get_target_engine()
     if drop_create or not table_exists(target_engine, '_location'):
         create_location_table(target_engine, drop_create=drop_create)
-    info("Fetching data from locations.xlsx location sheet...")
+    info("Fetching data from location_locations.csv...")
 
-    # Read from Excel
+    # Read from CSV
     df = get_location_data()
     if not df.empty:
         # Truncate the target table
@@ -34,15 +34,15 @@ def extract_location(drop_create=False):
         ]].to_dict(orient='records')
 
         # Insert into target
-        info(f"Inserting {len(source_data)} records from locations.xlsx location sheet into target _location table...")
+        info(f"Inserting {len(source_data)} records from location_locations.csv into target _location table...")
         insert_query = text(
             "INSERT INTO _location (location_id, name, level, parent_location, description, state_province, county_district, date_created, retired, retired_by, date_retired, retire_reason, uuid) VALUES (:location_id, :name, :level, :parent_location, :description, :state_province, :county_district, :date_created, :retired, :retired_by, :date_retired, :retire_reason, :uuid)")
         with target_engine.connect() as target_conn:
             target_conn.execute(insert_query, source_data)
             target_conn.commit()
-        info("Import from locations.xlsx location sheet completed successfully.")
+        info("Import from location_locations.csv completed successfully.")
     else:
-        warning("No data found in locations.xlsx location sheet.")
+        warning("No data found in location_locations.csv.")
 
 
 def extract_location_group(drop_create):
@@ -67,7 +67,7 @@ def load_location_attribute_type():
     info(f"Load location_attribute_type completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
 
-# Columns refreshed from locations.xlsx when a location already exists. location_id and uuid identify
+# Columns refreshed from location_locations.csv when a location already exists. location_id and uuid identify
 # the row and are never rewritten.
 LOCATION_UPSERT_COLUMNS = [
     "name", "description", "country", "state_province", "county_district", "creator", "date_created",
@@ -81,7 +81,7 @@ def _on_duplicate_update(columns):
 
 def build_location_upserts():
     """
-    Upserts for the location table; locations.xlsx is the source of truth, so a rerun applies edits made there.
+    Upserts for the location table; location_locations.csv is the source of truth, so a rerun applies edits made there.
     The level statements set the real parent. The catch-all statements at the end match many of the same
     rows with parent_location = NULL, so they refresh every column except parent_location.
     """
@@ -126,7 +126,7 @@ LEVEL_ATTRIBUTE_VALUES = ["REGION", "SUBREGION", "DISTRICT", "FACILITY"]
 
 def build_location_attribute_update():
     """
-    Brings the active LEVEL attribute in line with locations.xlsx, in place (no void and re-insert).
+    Brings the active LEVEL attribute in line with location_locations.csv, in place (no void and re-insert).
     location_attribute has no unique key on (location_id, attribute_type_id), so this cannot be an ON DUPLICATE KEY UPDATE.
     """
     return text(
@@ -182,7 +182,7 @@ def load_location_attribute():
 
 def verify_location_attribute():
     """
-    Warn when a staged location has no active LEVEL attribute, or one that differs from locations.xlsx.
+    Warn when a staged location has no active LEVEL attribute, or one that differs from location_locations.csv.
     The web app builds its Region/District/Facility dropdowns from LEVEL, so a gap here shows up as empty dropdowns.
     After load_location_attribute() this should report nothing.
     """
@@ -202,7 +202,7 @@ def verify_location_attribute():
     if missing:
         warning(f"{len(missing)} location(s) have no LEVEL attribute, e.g. {[(r.location_id, r.level) for r in missing[:10]]}")
     if stale:
-        warning(f"{len(stale)} location(s) have a LEVEL that differs from locations.xlsx, e.g. {[(r.location_id, r.value_reference, r.level) for r in stale[:10]]}")
+        warning(f"{len(stale)} location(s) have a LEVEL that differs from location_locations.csv, e.g. {[(r.location_id, r.value_reference, r.level) for r in stale[:10]]}")
     if not rows:
         info("All staged locations have the expected LEVEL attribute")
 
