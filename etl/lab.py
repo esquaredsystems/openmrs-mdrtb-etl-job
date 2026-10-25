@@ -8,6 +8,24 @@ from utils.helpers import get_labtest_attribute_type_data, get_labtest_type_data
 from utils.logger import info, warning
 
 
+# DST: the drug sits in value_coded and the result in the obs concept - 118 SUSCEPTIBLE TO TUBERCULOSIS DRUG
+# or 132 RESISTANT TO TUBERCULOSIS DRUG - stored as the answers 543 SUSCEPTIBLE / 183 RESISTANT, which are the
+# answers the result fields accept. (137 INDETERMINATE has no matching answer and is left out.)
+DST_RESULT_ANSWER_SQL = "CASE o.concept_id WHEN 118 THEN 543 WHEN 132 THEN 183 END"
+DST_DRUGS = [
+    ("AMIKACIN RESISTANCE", 115), ("BEDAQUILINE RESISTANCE", 447), ("CAPREOMYCIN RESISTANCE", 107),
+    ("CIPROFLOXACIN RESISTANCE", 79), ("CLARITHROMYCIN RESISTANCE", 93), ("CLOFAZAMINE RESISTANCE", 72),
+    ("CYCLOSERINE RESISTANCE", 104), ("DELAMANID RESISTANCE", 448), ("ETHAMBUTOL RESISTANCE", 113),
+    ("ETHIONAMIDE RESISTANCE", 76), ("GATIFLOXACIN RESISTANCE", 117), ("ISONIAZID RESISTANCE", 92),
+    ("KANAMYCIN RESISTANCE", 112), ("LEVOFLOXACIN RESISTANCE", 101), ("LINEZOLID RESISTANCE", 446),
+    ("MOXIFLOXACIN RESISTANCE", 109), ("OFLOXACIN RESISTANCE", 108), ("P-AMINOSALICY RESISTANCE", 98),
+    ("PROTHIONAMIDE RESISTANCE", 42), ("PYRAZINAMIDE RESISTANCE", 41), ("PYRIDOXINE RESISTANCE", 73),
+    ("RIFABUTIN RESISTANCE", 114), ("RIFAMPICIN RESISTANCE", 74), ("STREPTOMYCIN RESISTANCE", 75),
+    ("TERIZIDONE RESISTANCE", 40), ("THIOACETAZONE RESISTANCE", 99), ("VIOMYCIN RESISTANCE", 116),
+    ("OTHER RESISTANCE", 19),
+]
+
+
 ##### Extraction functions #####
 def extract_labtest_type(drop_create=False):
     target_engine = get_target_engine()
@@ -357,7 +375,7 @@ def load_labtest_attribute():
             group_name_clause=" and tat.group_name = 'XPERT'", additional_clause=""
         ),
         insert_sql_prefix.format(
-            value_reference="c.uuid", attribute_name="SENT TO CULTURE", concept_id=609,
+            value_reference="c.uuid", attribute_name="SENT TO DST", concept_id=609,
             additional_joins="""
                 inner join concept c on c.concept_id = o.value_coded
                 inner join obs o3 on o3.obs_id = o.obs_group_id and o3.concept_id = 311
@@ -425,7 +443,7 @@ def load_labtest_attribute():
             group_name_clause=" and tat.group_name = 'HAIN'", additional_clause=""
         ),
         insert_sql_prefix.format(
-            value_reference="c.uuid", attribute_name="RIFAMPICIN RESISTANCE", concept_id=545,
+            value_reference="c.uuid", attribute_name="RIFAMPICIN RESISTANCE", concept_id=546,
             additional_joins="""
                 inner join concept c on c.concept_id = o.value_coded
                 inner join obs o3 on o3.obs_id = o.obs_group_id and o3.concept_id = 323
@@ -451,7 +469,7 @@ def load_labtest_attribute():
             group_name_clause=" and tat.group_name = 'HAIN'", additional_clause=""
         ),
         insert_sql_prefix.format(
-            value_reference="c.uuid", attribute_name="SENT TO CULTURE", concept_id=609,
+            value_reference="c.uuid", attribute_name="SENT TO DST", concept_id=609,
             additional_joins="""
                 inner join concept c on c.concept_id = o.value_coded
                 inner join obs o3 on o3.obs_id = o.obs_group_id and o3.concept_id = 323
@@ -514,7 +532,7 @@ def load_labtest_attribute():
             group_name_clause=" and tat.group_name = 'HAIN2'", additional_clause=""
         ),
         insert_sql_prefix.format(
-            value_reference="c.uuid", attribute_name="КМ/АМ/СМ RESULT", concept_id=317,
+            value_reference="c.uuid", attribute_name="КМ/АМ/СМ RESULT", concept_id=412,
             additional_joins="""
                 inner join concept c on c.concept_id = o.value_coded
                 inner join obs o3 on o3.obs_id = o.obs_group_id and o3.concept_id = 414
@@ -535,22 +553,6 @@ def load_labtest_attribute():
             group_name_clause=" and tat.group_name = 'HAIN2'", additional_clause=""
         ),
         insert_sql_prefix.format(
-            value_reference="c.uuid", attribute_name="ISONIAZID RESULT", concept_id=545,
-            additional_joins="""
-                inner join concept c on c.concept_id = o.value_coded
-                inner join obs o3 on o3.obs_id = o.obs_group_id and o3.concept_id = 414
-            """,
-            group_name_clause=" and tat.group_name = 'HAIN2'", additional_clause=""
-        ),
-        insert_sql_prefix.format(
-            value_reference="c.uuid", attribute_name="RIFAMPICIN RESULT", concept_id=545,
-            additional_joins="""
-                inner join concept c on c.concept_id = o.value_coded
-                inner join obs o3 on o3.obs_id = o.obs_group_id and o3.concept_id = 414
-            """,
-            group_name_clause=" and tat.group_name = 'HAIN2'", additional_clause=""
-        ),
-        insert_sql_prefix.format(
             value_reference="o.value_datetime", attribute_name="DATE OF SENDING TO CULTURE", concept_id=607,
             additional_joins="inner join obs o3 on o3.obs_id = o.obs_group_id and o3.concept_id = 414",
             group_name_clause=" and tat.group_name = 'HAIN2'", additional_clause=""
@@ -566,7 +568,7 @@ def load_labtest_attribute():
 
         # --- CULTURE group ---
         insert_sql_prefix.format(
-            value_reference="o.value_numeric", attribute_name="TUBERCULOSIS CULTURE METHOD", concept_id=151,
+            value_reference="c.uuid", attribute_name="TUBERCULOSIS CULTURE METHOD", concept_id=151,
             additional_joins="""
                 inner join concept c on c.concept_id = o.value_coded
                 inner join obs o3 on o3.obs_id = o.obs_group_id and o3.concept_id = 153
@@ -667,7 +669,7 @@ def load_labtest_attribute():
             group_name_clause=" and tat.group_name = 'SMEAR'", additional_clause=""
         ),
         insert_sql_prefix.format(
-            value_reference="c.uuid", attribute_name="TUBERCULOSIS SMEAR RESULT", concept_id=312,
+            value_reference="c.uuid", attribute_name="TUBERCULOSIS SMEAR RESULT", concept_id=54,
             additional_joins="""
                 inner join concept c on c.concept_id = o.value_coded
                 inner join obs o3 on o3.obs_id = o.obs_group_id and o3.concept_id = 69
@@ -680,7 +682,7 @@ def load_labtest_attribute():
             group_name_clause=" and tat.group_name = 'SMEAR'", additional_clause=""
         ),
         insert_sql_prefix.format(
-            value_reference="o.value_datetime", attribute_name="BACILLI", concept_id=43,
+            value_reference="o.value_numeric", attribute_name="BACILLI", concept_id=43,
             additional_joins="inner join obs o3 on o3.obs_id = o.obs_group_id and o3.concept_id = 69",
             group_name_clause=" and tat.group_name = 'SMEAR'", additional_clause=""
         ),
@@ -710,51 +712,26 @@ def load_labtest_attribute_for_drugs():
     start_time = time.time()
     target_engine = get_target_engine()
 
-    # Queries from obs, joining labtest_test (test_type_id=7). The value_reference is always c2.uuid (concept 543 = SUSCEPTIBLE).
-    # Filtered by obs group concept 138 (TB DRUG SENSITIVITY TEST)
+    # Queries from obs, joining labtest_test (test_type_id=7). The value_reference is the SUSCEPTIBLE (543) or
+    # RESISTANT (183) answer, taken from the obs concept (see DST_RESULT_ANSWER_SQL).
+    # Filtered by obs group concept 138 (TB DRUG SENSITIVITY TEST). Only DST MGIT tests get these fields: without the
+    # test type filter every DST result was copied onto the COMMON TEST, which already gets it from the query below.
     insert_from_obs = """
         INSERT IGNORE INTO labtest_attribute (
             test_attribute_id, test_order_id, attribute_type_id, value_reference, creator, date_created, voided, voided_by, date_voided, void_reason, uuid
         )
         select 0, ct.test_order_id, cat.test_attribute_type_id, c2.uuid, o.creator, o.date_created, o.voided, o.voided_by, o.date_voided, o.void_reason, uuid() as uuid from obs as o
         inner join orders o2 ON o2.encounter_id = o.encounter_id
-        inner join labtest_test ct on ct.test_order_id = o2.order_id
+        inner join labtest_test ct on ct.test_order_id = o2.order_id and ct.test_type_id = 7
         inner join concept c on c.concept_id = o.value_coded
         inner join labtest_attribute_type cat on cat.test_type_id = 7 and cat.name = '{attribute_name}'
-        inner join concept c2 on c2.concept_id = 543
+        inner join concept c2 on c2.concept_id = """ + DST_RESULT_ANSWER_SQL + """
         inner join obs o3 on o3.obs_id = o.obs_group_id and o3.concept_id = 138
-        where o.concept_id = 118 and o.value_coded = {drug_concept_id};
+        where o.concept_id in (118, 132) and o.value_coded = {drug_concept_id} and o.voided = 0;
     """
     insert_queries = [
         # --- From obs, test_type_id=7 ---
-        insert_from_obs.format(attribute_name="AMIKACIN RESISTANCE", drug_concept_id=115),
-        insert_from_obs.format(attribute_name="BEDAQUILINE RESISTANCE", drug_concept_id=447),
-        insert_from_obs.format(attribute_name="CAPREOMYCIN RESISTANCE", drug_concept_id=107),
-        insert_from_obs.format(attribute_name="CIPROFLOXACIN RESISTANCE", drug_concept_id=79),
-        insert_from_obs.format(attribute_name="CLARITHROMYCIN RESISTANCE", drug_concept_id=93),
-        insert_from_obs.format(attribute_name="CLOFAZAMINE RESISTANCE", drug_concept_id=72),
-        insert_from_obs.format(attribute_name="CYCLOSERINE RESISTANCE", drug_concept_id=104),
-        insert_from_obs.format(attribute_name="DELAMANID RESISTANCE", drug_concept_id=448),
-        insert_from_obs.format(attribute_name="ETHAMBUTOL RESISTANCE", drug_concept_id=113),
-        insert_from_obs.format(attribute_name="ETHIONAMIDE RESISTANCE", drug_concept_id=76),
-        insert_from_obs.format(attribute_name="GATIFLOXACIN RESISTANCE", drug_concept_id=117),
-        insert_from_obs.format(attribute_name="ISONIAZID RESISTANCE", drug_concept_id=92),
-        insert_from_obs.format(attribute_name="KANAMYCIN RESISTANCE", drug_concept_id=112),
-        insert_from_obs.format(attribute_name="LEVOFLOXACIN RESISTANCE", drug_concept_id=101),
-        insert_from_obs.format(attribute_name="LINEZOLID RESISTANCE", drug_concept_id=446),
-        insert_from_obs.format(attribute_name="MOXIFLOXACIN RESISTANCE", drug_concept_id=109),
-        insert_from_obs.format(attribute_name="OFLOXACIN RESISTANCE", drug_concept_id=108),
-        insert_from_obs.format(attribute_name="P-AMINOSALICY RESISTANCE", drug_concept_id=98),
-        insert_from_obs.format(attribute_name="PROTHIONAMIDE RESISTANCE", drug_concept_id=42),
-        insert_from_obs.format(attribute_name="PYRAZINAMIDE RESISTANCE", drug_concept_id=41),
-        insert_from_obs.format(attribute_name="PYRIDOXINE RESISTANCE", drug_concept_id=73),
-        insert_from_obs.format(attribute_name="RIFABUTIN RESISTANCE", drug_concept_id=114),
-        insert_from_obs.format(attribute_name="RIFAMPICIN RESISTANCE", drug_concept_id=74),
-        insert_from_obs.format(attribute_name="STREPTOMYCIN RESISTANCE", drug_concept_id=75),
-        insert_from_obs.format(attribute_name="TERIZIDONE RESISTANCE", drug_concept_id=40),
-        insert_from_obs.format(attribute_name="THIOACETAZONE RESISTANCE", drug_concept_id=99),
-        insert_from_obs.format(attribute_name="VIOMYCIN RESISTANCE", drug_concept_id=116),
-        insert_from_obs.format(attribute_name="OTHER RESISTANCE", drug_concept_id=19)
+        insert_from_obs.format(attribute_name=name, drug_concept_id=drug) for name, drug in DST_DRUGS
     ]
     with target_engine.connect() as conn:
         info("Loading data for labtest_attribute table...")
@@ -764,7 +741,10 @@ def load_labtest_attribute_for_drugs():
         conn.commit()
     info(f"Load labtest_attribute_for_drugs completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
-    # Queries from _encounter_results, joining labtest_test (test_type_id=5). The value_reference is c.uuid (where c is the concept matching o.concept_id).
+    # Queries from _encounter_results, joining labtest_test (test_type_id=5) - the DST results the app shows.
+    # The value_reference is the SUSCEPTIBLE / RESISTANT answer (the obs concept itself is not an accepted answer, so
+    # the app could not display it), and only the DST group's fields are used: the same field names also exist
+    # ungrouped and in the HAIN group, which used to get a copy of every DST result.
     # Filtered by parent obs concept in (118, 138)
     insert_from_encounter_results = """
         INSERT IGNORE INTO labtest_attribute (
@@ -775,37 +755,14 @@ def load_labtest_attribute_for_drugs():
         inner join encounter_type et on et.encounter_type_id = e.encounter_type
         inner join obs p on p.obs_id = o.obs_group_id
         inner join orders o2 on o2.encounter_id = e.encounter_id
-        inner join concept c on c.concept_id = o.concept_id
+        inner join concept c on c.concept_id = """ + DST_RESULT_ANSWER_SQL + """
         inner join labtest_test ct on ct.test_order_id = o2.order_id
-        inner join labtest_attribute_type cat on cat.test_type_id = 5 and cat.name = '{attribute_name}'
+        inner join labtest_attribute_type cat on cat.test_type_id = 5 and cat.group_name = 'DST' and cat.name = '{attribute_name}'
         where p.concept_id in (118, 138) and o.value_coded = {drug_concept_id};
     """
     insert_queries = [
         # --- From _encounter_results, test_type_id=5 ---
-        insert_from_encounter_results.format(attribute_name="AMIKACIN RESISTANCE",      drug_concept_id=115),
-        insert_from_encounter_results.format(attribute_name="CAPREOMYCIN RESISTANCE",   drug_concept_id=107),
-        insert_from_encounter_results.format(attribute_name="CIPROFLOXACIN RESISTANCE", drug_concept_id=79),
-        insert_from_encounter_results.format(attribute_name="CLARITHROMYCIN RESISTANCE",drug_concept_id=93),
-        insert_from_encounter_results.format(attribute_name="CLOFAZAMINE RESISTANCE",   drug_concept_id=72),
-        insert_from_encounter_results.format(attribute_name="CYCLOSERINE RESISTANCE",   drug_concept_id=104),
-        insert_from_encounter_results.format(attribute_name="ETHAMBUTOL RESISTANCE",    drug_concept_id=113),
-        insert_from_encounter_results.format(attribute_name="ETHIONAMIDE RESISTANCE",   drug_concept_id=76),
-        insert_from_encounter_results.format(attribute_name="GATIFLOXACIN RESISTANCE",  drug_concept_id=117),
-        insert_from_encounter_results.format(attribute_name="ISONIAZID RESISTANCE",     drug_concept_id=92),
-        insert_from_encounter_results.format(attribute_name="KANAMYCIN RESISTANCE",     drug_concept_id=112),
-        insert_from_encounter_results.format(attribute_name="ETHAMBUTOL RESISTANCE",    drug_concept_id=101),
-        insert_from_encounter_results.format(attribute_name="MOXIFLOXACIN RESISTANCE",  drug_concept_id=109),
-        insert_from_encounter_results.format(attribute_name="OFLOXACIN RESISTANCE",     drug_concept_id=108),
-        insert_from_encounter_results.format(attribute_name="P-AMINOSALICY RESISTANCE", drug_concept_id=98),
-        insert_from_encounter_results.format(attribute_name="PROTHIONAMIDE RESISTANCE", drug_concept_id=42),
-        insert_from_encounter_results.format(attribute_name="PYRAZINAMIDE RESISTANCE",  drug_concept_id=41),
-        insert_from_encounter_results.format(attribute_name="PYRIDOXINE RESISTANCE",    drug_concept_id=73),
-        insert_from_encounter_results.format(attribute_name="RIFABUTIN RESISTANCE",     drug_concept_id=114),
-        insert_from_encounter_results.format(attribute_name="RIFAMPICIN RESISTANCE",    drug_concept_id=74),
-        insert_from_encounter_results.format(attribute_name="STREPTOMYCIN RESISTANCE",  drug_concept_id=75),
-        insert_from_encounter_results.format(attribute_name="TERIZIDONE RESISTANCE",    drug_concept_id=40),
-        insert_from_encounter_results.format(attribute_name="THIOACETAZONE RESISTANCE", drug_concept_id=99),
-        insert_from_encounter_results.format(attribute_name="VIOMYCIN RESISTANCE",      drug_concept_id=116),
+        insert_from_encounter_results.format(attribute_name=name, drug_concept_id=drug) for name, drug in DST_DRUGS
     ]
     with target_engine.connect() as conn:
         info("Loading data for labtest_attribute table...")
@@ -819,8 +776,9 @@ def load_labtest_attribute_for_drugs():
 def load_lab_group():
     load_labtest_type()
     load_labtest_attribute_type()
-    load_labtest_sample()
     load_labtest()
+    # After load_labtest(), so a new lab test gets its sample in the same run
+    load_labtest_sample()
     load_labtest_attribute()
     load_labtest_attribute_for_drugs()
 

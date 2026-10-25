@@ -160,14 +160,28 @@ def load_drug_ingredient():
 def load_drug_order():
     start_time = time.time()
     target_engine = get_target_engine()
+    # drug_order rows keep the source order_id, so they may only be attached where that id is a drug order
+    # (order_type 1) in the target. Lab orders get auto-increment ids that can equal a source drug order's id;
+    # without the join every drug_order row ended up on a lab order (no source drug order is loaded into `orders`
+    # yet: they have no encounter, which OpenMRS 2.x requires).
     select_insert_sql = """
     INSERT IGNORE INTO drug_order (order_id, drug_inventory_id, dose, as_needed, quantity, dosing_instructions)
-    SELECT order_id, drug_inventory_id, dose, prn AS as_needed, quantity, frequency
-    FROM _drug_order
+    SELECT d.order_id, d.drug_inventory_id, d.dose, d.prn AS as_needed, d.quantity, d.frequency
+    FROM _drug_order d
+    INNER JOIN orders o ON o.order_id = d.order_id AND o.order_type_id = 1
+    """
+    # Rows loaded by earlier runs onto non-drug orders (does nothing once removed)
+    delete_misattached_sql = """
+    DELETE d FROM drug_order d
+    INNER JOIN orders o ON o.order_id = d.order_id
+    WHERE o.order_type_id <> 1
     """
     # equivalent_daily_dose units
     with target_engine.connect() as conn:
         info("Loading data for drug_order table...")
+        removed = conn.execute(text(delete_misattached_sql)).rowcount
+        if removed:
+            info(f"Removed {removed} drug_order rows that were attached to non-drug orders")
         conn.execute(text(select_insert_sql))
         conn.commit()
     info(f"Load drug_order completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
