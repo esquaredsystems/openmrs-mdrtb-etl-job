@@ -549,10 +549,13 @@ def build_concept_uuid_conflicts():
     """
     Lists sheet concepts whose uuid already belongs to a DIFFERENT concept_id in the target. The upsert below would then
     hit the uuid unique key and overwrite that other concept with this one's data, so load_concept() stops instead.
+    _concept.uuid is utf8mb4_unicode_ci while the target's concept.uuid keeps its own collation (pre_etl_job() skips
+    uuid columns), so the comparison needs an explicit COLLATE or MySQL raises 1267 "Illegal mix of collations".
     """
     return text(
         "SELECT s.concept_id AS sheet_concept_id, c.concept_id AS target_concept_id, s.uuid "
-        "FROM _concept AS s INNER JOIN concept AS c ON c.uuid = s.uuid AND c.concept_id <> s.concept_id"
+        "FROM _concept AS s INNER JOIN concept AS c "
+        "ON c.uuid = s.uuid COLLATE utf8mb4_general_ci AND c.concept_id <> s.concept_id"
     )
 
 
