@@ -13,6 +13,16 @@ from utils.logger import info, warning
 
 
 ##### Extraction functions #####
+def to_target_datatype_id(concept_datatype_id):
+    """
+    The source concept_datatype table has no id 9 (1-8, then 10-13), and the target is loaded without the gap:
+    ids 10 and up move down by one (10 Boolean -> 9, 11 Rule -> 10, 12 Structured Numeric -> 11, 13 Complex -> 12).
+    concept_concept.csv uses the source numbering, so its datatype_id must go through this too, or e.g. a Boolean
+    concept would land on Rule and a Complex one on an id that does not exist.
+    """
+    return concept_datatype_id - 1 if concept_datatype_id >= 10 else concept_datatype_id
+
+
 def extract_concept(drop_create=False):
     target_engine = get_target_engine()
     if drop_create or not table_exists(target_engine, '_concept'):
@@ -26,6 +36,7 @@ def extract_concept(drop_create=False):
 
         info(f"Inserting {len(df)} records from concept_concept.csv into target _concept table...")
         df = df.replace({np.nan: None, pd.NaT: None})
+        df["datatype_id"] = df["datatype_id"].apply(lambda value: to_target_datatype_id(int(value)))
         for column in ["short_name", "description", "form_text", "version", "date_retired", "retire_reason"]:
             if column not in df.columns:
                 df[column] = None
@@ -148,9 +159,7 @@ def extract_concept_datatype(drop_create=False):
         with target_engine.connect() as target_conn:
             for row in source_data:
                 # Note! This is done because in the source table, concept_datatype_id=9 does not exist
-                concept_datatype_id = row.concept_datatype_id
-                if concept_datatype_id >= 10:
-                    concept_datatype_id -= 1
+                concept_datatype_id = to_target_datatype_id(row.concept_datatype_id)
 
                 target_conn.execute(insert_query, {
                     "concept_datatype_id": concept_datatype_id, "name": row.name,
@@ -536,16 +545,46 @@ def load_concept_name_tag():
     info(f"Load concept_name_tag completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
 
+def build_concept_uuid_conflicts():
+    """
+    Lists sheet concepts whose uuid already belongs to a DIFFERENT concept_id in the target. The upsert below would then
+    hit the uuid unique key and overwrite that other concept with this one's data, so load_concept() stops instead.
+    """
+    return text(
+        "SELECT s.concept_id AS sheet_concept_id, c.concept_id AS target_concept_id, s.uuid "
+        "FROM _concept AS s INNER JOIN concept AS c ON c.uuid = s.uuid AND c.concept_id <> s.concept_id"
+    )
+
+
+def build_concept_upsert():
+    """
+    concept_concept.csv is the source of truth: new concepts are inserted and existing ones (same concept_id) take every
+    column the sheet has, uuid included. short_name, description, form_text, version, date_retired and retire_reason are
+    not in the sheet, so they are left as they are in the target instead of being blanked.
+    """
+    return text(
+        "INSERT INTO concept (concept_id, retired, short_name, description, form_text, datatype_id, class_id, is_set, "
+        "creator, date_created, version, changed_by, date_changed, retired_by, date_retired, retire_reason, uuid) "
+        "SELECT concept_id, retired, short_name, description, form_text, datatype_id, class_id, is_set, "
+        "creator, date_created, version, changed_by, date_changed, retired_by, date_retired, retire_reason, uuid "
+        "FROM _concept "
+        "ON DUPLICATE KEY UPDATE retired = VALUES(retired), retired_by = VALUES(retired_by), "
+        "datatype_id = VALUES(datatype_id), class_id = VALUES(class_id), is_set = VALUES(is_set), "
+        "creator = VALUES(creator), date_created = VALUES(date_created), changed_by = VALUES(changed_by), "
+        "date_changed = VALUES(date_changed), uuid = VALUES(uuid)"
+    )
+
+
 def load_concept():
     start_time = time.time()
     target_engine = get_target_engine()
-    select_insert_sql = """
-    INSERT IGNORE INTO concept (concept_id, retired, short_name, description, form_text, datatype_id, class_id, is_set, creator, date_created, version, changed_by, date_changed, retired_by, date_retired, retire_reason, uuid)
-    SELECT concept_id, retired, short_name, description, form_text, datatype_id, class_id, is_set, creator, date_created, version, changed_by, date_changed, retired_by, date_retired, retire_reason, uuid FROM _concept
-    """
     with target_engine.connect() as conn:
         info("Loading data for concept table...")
-        conn.execute(text(select_insert_sql))
+        conflicts = conn.execute(build_concept_uuid_conflicts()).fetchall()
+        if conflicts:
+            details = ", ".join(f"sheet {row[0]} vs target {row[1]} ({row[2]})" for row in conflicts)
+            raise Exception(f"concept not loaded: uuid already used by another concept_id in the target: {details}")
+        conn.execute(build_concept_upsert())
         conn.commit()
     info(f"Load concept completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
@@ -578,25 +617,30 @@ def build_concept_answer_delete():
 
 def build_concept_answer_changed_count():
     """
-    Counts the existing target answers whose answer_concept or sort_weight differs from the sheet. The affected-rows count of
-    the upsert below cannot be used for this: with FOUND_ROWS an unchanged row counts the same as a new one.
+    Counts the existing target answers whose concept_id, answer_concept or sort_weight differs from the sheet. The
+    affected-rows count of the upsert below cannot be used for this: with FOUND_ROWS an unchanged row counts the same as a new one.
     """
     return text(
         "SELECT COUNT(*) FROM concept_answer AS ca "
         "INNER JOIN _concept_answer AS s ON s.concept_answer_id = ca.concept_answer_id "
-        "WHERE NOT (ca.answer_concept <=> s.answer_concept) OR NOT (ca.sort_weight <=> s.sort_weight)"
+        "WHERE NOT (ca.concept_id <=> s.concept_id) OR NOT (ca.answer_concept <=> s.answer_concept) "
+        "OR NOT (ca.sort_weight <=> s.sort_weight)"
     )
 
 
 def build_concept_answer_upsert():
     """
-    Inserts new answers and brings answer_concept and sort_weight of existing ones in line with the sheet,
+    Inserts new answers and brings concept_id, answer_concept and sort_weight of existing ones in line with the sheet,
     so a change of order in concept_*.csv reaches an already populated target.
+    concept_id must be included: an existing target row with the same concept_answer_id but a different question
+    otherwise keeps that question and only takes the new answer. That is how answers 945-952 (the XPERT ULTRA / XDR
+    RESULT answers) ended up listed under POPULATION CATEGORY (concept 338) on Form 89.
     """
     return text(
         "INSERT IGNORE INTO concept_answer (concept_answer_id, concept_id, answer_concept, answer_drug, creator, date_created, sort_weight, uuid) "
         "SELECT concept_answer_id, concept_id, answer_concept, answer_drug, creator, date_created, sort_weight, uuid FROM _concept_answer "
-        "ON DUPLICATE KEY UPDATE answer_concept = VALUES(answer_concept), sort_weight = VALUES(sort_weight)"
+        "ON DUPLICATE KEY UPDATE concept_id = VALUES(concept_id), answer_concept = VALUES(answer_concept), "
+        "sort_weight = VALUES(sort_weight)"
     )
 
 
@@ -630,19 +674,79 @@ def load_concept_complex():
     info(f"Load concept_complex completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
 
+def plan_concept_name_load(staged, existing):
+    """
+    Pairs the sheet's names with the target's by (concept_id, locale, concept_name_type) and their order within that
+    group, NOT by row number: removing or inserting a row in concept_concept_name.csv must not move other names onto
+    another concept. Order matters only where a concept has two names of the same type and locale (e.g. two en SHORT).
+    staged:   (concept_id, name, locale, concept_name_type, uuid) in sheet order.
+    existing: (concept_name_id, concept_id, name, locale, concept_name_type) of non-voided target names, by id.
+    Returns (updates, inserts, unmatched): updates = [(concept_name_id, new_name)], inserts = staged rows with no target
+    name in their slot, unmatched = target names (of concepts in the sheet) that the sheet no longer has.
+    """
+    target_slots = {}
+    for row in existing:
+        target_slots.setdefault((row[1], row[3], row[4]), []).append(row)
+    sheet_slots = {}
+    for row in staged:
+        sheet_slots.setdefault((row[0], row[2], row[3]), []).append(row)
+
+    updates, inserts, unmatched = [], [], []
+    for key, sheet_rows in sheet_slots.items():
+        target_rows = target_slots.get(key, [])
+        for position, sheet_row in enumerate(sheet_rows):
+            if position < len(target_rows):
+                if target_rows[position][2] != sheet_row[1]:
+                    updates.append((target_rows[position][0], sheet_row[1]))
+            else:
+                inserts.append(sheet_row)
+        unmatched.extend(target_rows[len(sheet_rows):])
+    sheet_concepts = {row[0] for row in staged}
+    for key, target_rows in target_slots.items():
+        if key not in sheet_slots and key[0] in sheet_concepts:
+            unmatched.extend(target_rows)
+    return updates, inserts, unmatched
+
+
 def load_concept_name():
     start_time = time.time()
     target_engine = get_target_engine()
     with target_engine.connect() as conn:
         info("Loading data for concept_name table...")
-        # Run UPSERT
-        upsert_sql = """
-        INSERT IGNORE INTO concept_name (concept_name_id, concept_id, name, locale, locale_preferred, creator, date_created, concept_name_type, voided, voided_by, date_voided, void_reason, uuid)
-        SELECT concept_name_id, concept_id, name, locale, locale_preferred, creator, date_created, concept_name_type, voided, voided_by, date_voided, void_reason, uuid FROM _concept_name
-        ON DUPLICATE KEY UPDATE concept_id = VALUES(concept_id), name = VALUES(name), locale = VALUES(locale), locale_preferred = VALUES(locale_preferred), creator = VALUES(creator), date_created = VALUES(date_created), concept_name_type = VALUES(concept_name_type), voided = VALUES(voided), voided_by = VALUES(voided_by), date_voided = VALUES(date_voided), void_reason = VALUES(void_reason)
-        """
-        conn.execute(text(upsert_sql))
+        staged = conn.execute(text(
+            "SELECT concept_id, name, locale, concept_name_type, uuid FROM _concept_name ORDER BY concept_name_id"
+        )).fetchall()
+        if not staged:
+            warning("No data found in _concept_name staging table, skipping concept_name load.")
+            return
+        # Synonyms (concept_name_type NULL) are not in the sheet; they are never touched.
+        existing = conn.execute(text(
+            "SELECT concept_name_id, concept_id, name, locale, concept_name_type FROM concept_name "
+            "WHERE voided = 0 AND concept_name_type IS NOT NULL ORDER BY concept_name_id"
+        )).fetchall()
+        updates, inserts, unmatched = plan_concept_name_load(staged, existing)
+        if updates:
+            conn.execute(
+                text("UPDATE concept_name SET name = :name WHERE concept_name_id = :concept_name_id"),
+                [{"concept_name_id": name_id, "name": name} for name_id, name in updates],
+            )
+        if inserts:
+            # concept_name_id is left to the target's AUTO_INCREMENT
+            conn.execute(
+                text(
+                    "INSERT INTO concept_name (concept_id, name, locale, locale_preferred, creator, date_created, "
+                    "concept_name_type, voided, uuid) "
+                    "VALUES (:concept_id, :name, :locale, 0, 1, NOW(), :concept_name_type, 0, :uuid)"
+                ),
+                [{"concept_id": row[0], "name": row[1], "locale": row[2], "concept_name_type": row[3], "uuid": row[4]}
+                 for row in inserts],
+            )
         conn.commit()
+        info(f"concept_name row(s): {len(updates)} updated, {len(inserts)} inserted")
+        if unmatched:
+            # Left in place on purpose: obs.value_coded_name_id may point at them. Listed so they can be reviewed.
+            warning(f"{len(unmatched)} target concept_name row(s) are not in concept_concept_name.csv (left as they are): "
+                    + ", ".join(f"{row[0]}:{row[1]}/{row[3]}/{row[4]}={row[2]}" for row in unmatched))
     info(f"Load concept_name completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
 
 

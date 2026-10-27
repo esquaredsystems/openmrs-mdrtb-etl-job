@@ -42,17 +42,22 @@ def test_delete_has_no_hardcoded_ids():
     assert not re.search(r"\d", str(build_concept_answer_delete()).replace("SELECT 1", ""))
 
 
-def test_upsert_updates_answer_concept_and_sort_weight_on_duplicate_key():
+def test_upsert_updates_concept_answer_and_sort_weight_on_duplicate_key():
     sql = _normalised(build_concept_answer_upsert())
     assert "ON DUPLICATE KEY UPDATE" in sql
+    assert "CONCEPT_ID = VALUES(CONCEPT_ID)" in sql
     assert "ANSWER_CONCEPT = VALUES(ANSWER_CONCEPT)" in sql
     assert "SORT_WEIGHT = VALUES(SORT_WEIGHT)" in sql
 
 
 def test_upsert_does_not_rewrite_identity_columns():
-    """uuid, creator and date_created of an existing answer must stay as they are in the target."""
+    """uuid, creator and date_created of an existing answer must stay as they are in the target.
+    concept_id is updated on purpose: a row with the sheet's concept_answer_id sitting under another question
+    must move to the sheet's question (Form 89 POPULATION CATEGORY showed XPERT RESULT answers because of this)."""
     update_clause = _normalised(build_concept_answer_upsert()).split("ON DUPLICATE KEY UPDATE")[1]
-    assert update_clause.strip() == "ANSWER_CONCEPT = VALUES(ANSWER_CONCEPT), SORT_WEIGHT = VALUES(SORT_WEIGHT)"
+    assert update_clause.strip() == (
+        "CONCEPT_ID = VALUES(CONCEPT_ID), ANSWER_CONCEPT = VALUES(ANSWER_CONCEPT), SORT_WEIGHT = VALUES(SORT_WEIGHT)"
+    )
 
 
 def test_insert_ignore_is_retained():
@@ -60,8 +65,9 @@ def test_insert_ignore_is_retained():
     assert "INSERT IGNORE INTO CONCEPT_ANSWER" in _normalised(build_concept_answer_upsert())
 
 
-def test_changed_count_compares_both_columns_null_safely():
+def test_changed_count_compares_all_updated_columns_null_safely():
     sql = _normalised(build_concept_answer_changed_count())
+    assert "NOT (CA.CONCEPT_ID <=> S.CONCEPT_ID)" in sql
     assert "NOT (CA.ANSWER_CONCEPT <=> S.ANSWER_CONCEPT)" in sql
     assert "NOT (CA.SORT_WEIGHT <=> S.SORT_WEIGHT)" in sql
     assert "S.CONCEPT_ANSWER_ID = CA.CONCEPT_ANSWER_ID" in sql

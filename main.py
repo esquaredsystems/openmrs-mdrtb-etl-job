@@ -171,7 +171,7 @@ def post_etl_job(metadata_only=False):
     """
     Perform post-ETL tasks such as data cleanup, fixing obsolete location IDs,
     and ensuring necessary privileges for anonymous users are set.
-    With metadata_only, the location fix on clinical data tables is skipped.
+    With metadata_only, the fixes on clinical data tables (location 205, obs answer 194) are skipped.
     """
     # Placeholder for any post-ETL tasks like cleanup, indexing, etc.
     # Update location IDs for obsolete location
@@ -182,6 +182,15 @@ def post_etl_job(metadata_only=False):
             conn.execute(text("UPDATE obs SET location_id = 214 WHERE location_id = 205;"))
             conn.execute(text("UPDATE patient_identifier SET location_id = 214 WHERE location_id = 205;"))
             conn.execute(text("UPDATE patient_program SET location_id = 214 WHERE location_id = 205;"))
+            # Concept 194 PATIENT PREGNANT is a retired duplicate of 175 PREGNANCY
+            conn.execute(text("UPDATE obs SET value_coded = 175, value_coded_name_id = NULL WHERE value_coded = 194;"))
+        # Retire concept 194 PATIENT PREGNANT, a duplicate of 175. retired = 1 comes from concept_concept.csv; the
+        # sheet has no date_retired / retire_reason, so they are set here once (date_retired IS NULL).
+        conn.execute(text("""
+            UPDATE concept SET retired = 1, retired_by = 1, date_retired = NOW(),
+                retire_reason = 'Duplicate of 175 PREGNANCY'
+            WHERE concept_id = 194 AND date_retired IS NULL;
+        """))
 
         # Set concepts for the program outcomes in program tables
         conn.execute(text("UPDATE program SET outcomes_concept_id = 30 where program_id = 1;"))

@@ -3,7 +3,7 @@
 # Conventions, do-not-touch rules, and agent workflow: ./AGENTS.md (read it before changing ETL behavior)
 # Shared facts (domain model, concept UUIDs, topology): ../.agents/graph.md
 # Usage + notation legend + maintenance rules: ../.agents/instructions.md
-# Last updated: 2026-08-02
+# Last updated: 2026-10-27 (concept upsert from CSV; names matched by concept+locale+type; 864 removed)
 
 ## § MODULE LAYOUT
 ```
@@ -83,4 +83,30 @@ Output (fk_report/, git-ignored - contains patient data):
 Resilience: per-constraint connection + try/except -> one failure never aborts the run;
        failed constraints listed at end of etl.log
 Tests: tests/test_fk_check.py (no DB required - SQL building, identifier safety, summary)
+```
+
+## § CONCEPT_ANSWER LOAD (etl/concept.py load_concept_answer)
+```
+resources/concept_concept_answer.csv is the source of truth for the concepts it lists.
+Row identity = concept_answer_id. One transaction: delete rows of listed concepts whose id is not in the sheet,
+  then upsert; ON DUPLICATE KEY UPDATE sets concept_id, answer_concept, sort_weight (never uuid/creator/date_created).
+concept_id is in the update set since 2026-10-27: without it, target rows 945-952 kept concept 338
+  (POPULATION CATEGORY) while taking XPERT ULTRA/XDR RESULT answers -> wrong options on Form 89.
+```
+
+## § CONCEPT LOAD (etl/concept.py load_concept, load_concept_name) — CSV files are the source of truth
+```
+load_concept: INSERT ... ON DUPLICATE KEY UPDATE every column concept_concept.csv has, uuid included
+  (not short_name/description/form_text/version/date_retired/retire_reason: not in the sheet, left as they are).
+  Stops BEFORE writing if a sheet uuid already belongs to another concept_id in the target (would merge 2 concepts).
+  Concepts removed from the sheet are NOT deleted from the target (obs may use them).
+  datatype_id goes through to_target_datatype_id() (source has no id 9: 10+ shift down by one), same as
+  the concept_datatype load; without it 13 Complex hit an FK error and 10 Boolean landed on Rule.
+load_concept_name: matched by (concept_id, locale, concept_name_type) + order inside that group, NOT by row number,
+  so removing/inserting CSV rows never moves names onto another concept. Changed name -> UPDATE, new -> INSERT
+  (AUTO_INCREMENT id). Target names the sheet lacks (for concepts it lists) are only reported in etl.log.
+  Synonyms (concept_name_type NULL) are never touched. 7 concepts have 2 en SHORT names (16,17,42,76,190,322,547).
+2026-10-27: 194 PATIENT PREGNANT retired (dup of 175; answer row 173 -> 175; post_etl_job sets date/reason,
+  full runs move obs 194 -> 175). 864 INDETERMINATE (I) removed from all concept CSVs (dup of 143); answers
+  960-975 (questions 848-853) now 143. 143 added as answer to 558-569 (rows 1006-1017).
 ```
