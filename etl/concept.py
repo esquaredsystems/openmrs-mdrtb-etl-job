@@ -15,10 +15,12 @@ from utils.logger import info, warning
 ##### Extraction functions #####
 def to_target_datatype_id(concept_datatype_id):
     """
-    The source concept_datatype table has no id 9 (1-8, then 10-13), and the target is loaded without the gap:
+    The source concept_datatype table has no id 9 (1-8, then 10-13), and _concept_datatype is staged without the gap:
     ids 10 and up move down by one (10 Boolean -> 9, 11 Rule -> 10, 12 Structured Numeric -> 11, 13 Complex -> 12).
     concept_concept.csv uses the source numbering, so its datatype_id must go through this too, or e.g. a Boolean
     concept would land on Rule and a Complex one on an id that does not exist.
+    The target only gets these ids when its concept_datatype was empty; load_concept() resolves the target's own id by
+    uuid, so a target that keeps the standard OpenMRS ids (with the gap) works as well.
     """
     return concept_datatype_id - 1 if concept_datatype_id >= 10 else concept_datatype_id
 
@@ -559,18 +561,43 @@ def build_concept_uuid_conflicts():
     )
 
 
+# _concept.datatype_id and _concept_datatype share the staging numbering of to_target_datatype_id(). The target's
+# concept_datatype may not: one set up by OpenMRS itself keeps the standard ids with the gap (Boolean = 10), so the
+# target id is looked up by uuid. COLLATE as in build_concept_uuid_conflicts(): concept_datatype.uuid keeps its own collation.
+CONCEPT_DATATYPE_JOIN = (
+    "LEFT JOIN _concept_datatype AS sd ON sd.concept_datatype_id = s.datatype_id "
+    "LEFT JOIN concept_datatype AS td ON td.uuid = sd.uuid COLLATE utf8mb4_general_ci "
+)
+
+
+def build_concept_unresolved_datatypes():
+    """
+    Lists sheet concepts whose datatype has no row with the same uuid in the target's concept_datatype. The upsert
+    below would otherwise fail on the concept_datatypes foreign key (or skip them), so load_concept() stops instead.
+    """
+    return text(
+        "SELECT s.concept_id, s.datatype_id, sd.name FROM _concept AS s "
+        + CONCEPT_DATATYPE_JOIN
+        + "WHERE td.concept_datatype_id IS NULL"
+    )
+
+
 def build_concept_upsert():
     """
     concept_concept.csv is the source of truth: new concepts are inserted and existing ones (same concept_id) take every
     column the sheet has, uuid included. short_name, description, form_text, version, date_retired and retire_reason are
     not in the sheet, so they are left as they are in the target instead of being blanked.
+    datatype_id is the target's own id for the datatype, matched by uuid (see CONCEPT_DATATYPE_JOIN).
     """
     return text(
         "INSERT INTO concept (concept_id, retired, short_name, description, form_text, datatype_id, class_id, is_set, "
         "creator, date_created, version, changed_by, date_changed, retired_by, date_retired, retire_reason, uuid) "
-        "SELECT concept_id, retired, short_name, description, form_text, datatype_id, class_id, is_set, "
-        "creator, date_created, version, changed_by, date_changed, retired_by, date_retired, retire_reason, uuid "
-        "FROM _concept "
+        "SELECT s.concept_id, s.retired, s.short_name, s.description, s.form_text, td.concept_datatype_id, s.class_id, "
+        "s.is_set, s.creator, s.date_created, s.version, s.changed_by, s.date_changed, s.retired_by, s.date_retired, "
+        "s.retire_reason, s.uuid "
+        "FROM _concept AS s "
+        + CONCEPT_DATATYPE_JOIN
+        + "WHERE td.concept_datatype_id IS NOT NULL "
         "ON DUPLICATE KEY UPDATE retired = VALUES(retired), retired_by = VALUES(retired_by), "
         "datatype_id = VALUES(datatype_id), class_id = VALUES(class_id), is_set = VALUES(is_set), "
         "creator = VALUES(creator), date_created = VALUES(date_created), changed_by = VALUES(changed_by), "
@@ -587,6 +614,11 @@ def load_concept():
         if conflicts:
             details = ", ".join(f"sheet {row[0]} vs target {row[1]} ({row[2]})" for row in conflicts)
             raise Exception(f"concept not loaded: uuid already used by another concept_id in the target: {details}")
+        unresolved = conn.execute(build_concept_unresolved_datatypes()).fetchall()
+        if unresolved:
+            details = ", ".join(f"concept {row[0]} datatype {row[1]} ({row[2] or 'not in _concept_datatype'})"
+                                for row in unresolved)
+            raise Exception(f"concept not loaded: datatype not found by uuid in the target concept_datatype: {details}")
         conn.execute(build_concept_upsert())
         conn.commit()
     info(f"Load concept completed successfully (Total Time: {time.time() - start_time:.2f} seconds)")
