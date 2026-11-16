@@ -169,8 +169,9 @@ def load_labtest_sample():
         INSERT INTO labtest_sample (
             test_order_id, specimen_type, specimen_site, is_expirable, lab_sample_identifier, collector, status, creator, date_created, collection_date, processed_date, uuid
         )
-        SELECT lt.test_order_id, 61 AS specimen_type, 491 AS specimen_site, 0, UUID() AS lab_sample_identifier, lt.creator, 'PROCESSED', lt.creator, lt.date_created, lt.date_created, lt.date_created, UUID()
+        SELECT lt.test_order_id, 61 AS specimen_type, 491 AS specimen_site, 0, UUID() AS lab_sample_identifier, lt.creator, 'PROCESSED', lt.creator, lt.date_created, COALESCE(o.date_activated, lt.date_created), COALESCE(o.date_activated, lt.date_created), UUID()
         FROM labtest_test AS lt
+        INNER JOIN orders AS o ON o.order_id = lt.test_order_id
         WHERE lt.voided = 0 AND NOT EXISTS (
           SELECT 1 FROM labtest_sample AS ls WHERE ls.test_order_id = lt.test_order_id AND ls.date_created = lt.date_created
         )
